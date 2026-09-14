@@ -8,12 +8,13 @@
     "check-types": "tsc --noEmit --incremental",
     "clean": "hardhat clean",
     "compile": "hardhat compile",
-    "deploy": "hardhat run deploy/00_deploy_invoice_registry.ts",
+    "deploy": "hardhat run scripts/deploy.ts",
     "test": "REPORT_GAS=true hardhat test",
     "verify:testnet": "hardhat run scripts/verifyDeployed.ts --network hederaTestnet",
     "verify:mainnet": "hardhat run scripts/verifyDeployed.ts --network hederaMainnet"
   },
   "dependencies": {
+    "@hashgraph/sdk": "^2.81.0",
     "@openzeppelin/contracts": "^5.0.2",
     "dotenv": "^16.4.5"
   },

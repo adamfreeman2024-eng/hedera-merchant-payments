@@ -6,18 +6,17 @@
   "types": "dist/index.d.ts",
   "bin": { "hmp-reconciler": "dist/cli.js" },
   "scripts": {
-    "dev": "tsx watch src/cli.ts --watch",
-    "once": "tsx src/cli.ts",
+    "dev": "tsx watch src/cli.ts",
+    "once": "tsx src/cli.ts --once",
     "smoke:testnet": "tsx src/smoke.ts",
     "typecheck": "tsc --noEmit",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@hmp/ledger": "*",
     "@hashgraph/sdk": "^2.81.0",
-    "@prisma/client": "^5.22.0"
+    "@prisma/client": "^5.22.0",
+    "ethers": "^6.13.2"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",

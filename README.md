@@ -139,6 +139,7 @@ Verified locally (commands and results, not claims):
 | Contract behaviour | `yarn hardhat:test` | ✅ **11 passing** (lifecycle, access control, HTS-path guards, expiry, key rotation) |
 | Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **10 passing** (units, memo, state machine, webhook signatures) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ scaffolds, manifest validates, outro + `{run:scripts}` render |
+| Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, 8-assertion acceptance contract) | ✅ all valid JSON/YAML; contract: 2 critical / 5 major / 1 minor |
 
 - [x] `InvoiceRegistry` with atomic HTS settlement + attested HBAR settlement
 - [x] Ledger domain rules (units, memo, state machine, webhook signing) with unit tests

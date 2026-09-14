@@ -1,0 +1,44 @@
+{
+  "name": "merchant-payments-yarn",
+  "description": "Yarn commands for hedera-merchant-payments. `install` is named exactly \"install\" so the harness reuses it across repair attempts while the lockfile fingerprint is unchanged. No command needs live secrets.",
+  "requiresNoSecrets": true,
+  "forbiddenCommands": ["npm install", "npm run", "pnpm install", "pnpm run"],
+  "commands": [
+    {
+      "name": "install",
+      "command": "yarn install",
+      "timeoutMs": 300000,
+      "purpose": "Install workspace dependencies."
+    },
+    {
+      "name": "typecheck-ledger",
+      "command": "yarn workspace @hmp/ledger typecheck",
+      "timeoutMs": 180000,
+      "purpose": "Money/state-machine/webhook code must compile under strict TypeScript."
+    },
+    {
+      "name": "test-ledger",
+      "command": "yarn workspace @hmp/ledger test",
+      "timeoutMs": 180000,
+      "purpose": "Unit tests for units, memo, invoice state machine and webhook signatures."
+    },
+    {
+      "name": "compile-contracts",
+      "command": "yarn hardhat:compile",
+      "timeoutMs": 300000,
+      "purpose": "InvoiceRegistry must compile (solc 0.8.28)."
+    },
+    {
+      "name": "test-contracts",
+      "command": "yarn hardhat:test",
+      "timeoutMs": 300000,
+      "purpose": "Invoice lifecycle, access control, HTS-path guards, expiry, key rotation."
+    },
+    {
+      "name": "build",
+      "command": "yarn next:build",
+      "timeoutMs": 300000,
+      "purpose": "Production build of the merchant dashboard + hosted checkout (includes typecheck)."
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+# Hedera Harness spec — hedera-merchant-payments
+#
+# Shape follows `buidler-labs/hbar-agentic-harness` (docs/authoring-a-template.md).
+# Run from a harness checkout:
+#   npm run harness -- validate      harness/spec.yaml --workspace runs/<id>/workspace
+#   npm run harness -- validate-semantic harness/spec.yaml --workspace runs/<id>/workspace
+#   npm run harness -- run           harness/spec.yaml --max-attempts 3
+#
+# The PRD + acceptance contract below are the product contract. The semantic
+# validator grades the RUNNING app against contracts/*-acceptance.json, not the PRD.
+
+name: hedera-merchant-payments
+description: Non-custodial merchant payment gateway — on-chain invoices, HTS/HBAR checkout, Mirror Node reconciliation, HCS receipts, signed webhooks.
+
+prd: harness/docs/prds/merchant-payments.md
+contract: harness/contracts/merchant-payments-acceptance.json
+
+seed:
+  # The harness seeds a workspace from this template repo (community template).
+  repo: hedera-dev-template/hedera-merchant-payments
+  ref: main
+  preflight:
+    commands:
+      - name: seed-install
+        command: yarn install
+        timeoutMs: 300000
+  isolation:
+    neverModifySeedRepo: true
+
+generator:
+  provider: command
+  command: agent
+  args:
+    - -p
+    - --trust
+    - --sandbox
+    - enabled
+    - --workspace
+    - "{workspace}"
+    - --force
+    - --output-format
+    - stream-json
+    - --stream-partial-output
+  timeoutMs: 3600000
+
+validator:
+  enabled: true
+  provider: command
+  command: agent
+  args:
+    - -p
+    - --trust
+    - --force
+    - --sandbox
+    - disabled
+    - --approve-mcps
+    - --workspace
+    - "{workspace}"
+    - --output-format
+    - stream-json
+    - --stream-partial-output
+  timeoutMs: 600000
+
+constraints:
+  packageManager: yarn@3.2.3
+  workspaces:
+    - packages/nextjs
+    - packages/hardhat
+    - packages/ledger
+    - services/reconciler
+  forbiddenCommands:
+    - npm install
+    - npm run
+    - pnpm install
+    - pnpm run
+
+templateMetadata:
+  name: hedera-merchant-payments
+  frontend: nextjs-app
+  solidityFramework: hardhat
+
+validators:
+  static: harness/validators/merchant-payments-static.json
+  commands: harness/validators/merchant-payments-yarn.json
+  playwright: harness/playwright/merchant-payments-smoke.yaml
+
+requiredFiles:
+  - template.json
+  - README.md
+  - RUNBOOK.md
+  - AGENTS.md
+  - package.json
+  - packages/hardhat/contracts/InvoiceRegistry.sol
+  - packages/ledger/src/money.ts
+  - packages/ledger/src/invoice.ts
+  - packages/nextjs/package.json
+  - services/reconciler/src/cli.ts
+
+forbiddenFiles:
+  - .env
+  - packages/nextjs/.env
+  - packages/hardhat/.account
+
+secretScan:
+  failOnFiles:
+    - .env
+    - packages/nextjs/.env
+  patterns:
+    - name: private-key-assignment
+      pattern: "(HEDERA_OPERATOR_KEY|DEPLOYER_PRIVATE_KEY|PRIVATE_KEY)\\s*=\\s*(0x)?[0-9a-fA-F]{32,}"
+    - name: mnemonic
+      pattern: "(MNEMONIC|SEED_PHRASE)\\s*=\\s*\\w+(\\s+\\w+){11,}"
+
+# Tier 3.5 (on-chain validation with an ephemeral ECDSA test signer).
+# Enable once the hosted checkout ships a burner connector
+# (enableBurnerWallet + burner in wagmiConnectors) so a headless signer can pay.
+# chainValidation:
+#   enabled: true
+#   network: testnet
+#   operator:
+#     accountIdEnv: HEDERA_OPERATOR_ID
+#     privateKeyEnv: HEDERA_OPERATOR_KEY
+#   fundingHbar: 10
+#   sweepBack: true
+#   expose:
+#     browserLocalStorageKey: burnerWallet.pk
+
+maxAttempts: 3
+
+logging:
+  jsonl: runs/harness.log.jsonl
+  notes: runs/harness-notes.md

@@ -1,0 +1,58 @@
+{
+  "name": "merchant-payments-static",
+  "description": "Static invariants for hedera-merchant-payments: manifest identity, package layout, no secrets committed, README/AGENTS commands that actually exist.",
+  "jsonAssertions": [
+    { "file": "template.json", "path": "name", "equals": "hedera-merchant-payments" },
+    { "file": "template.json", "path": "create-scaffold-hbar.capabilities.frontend", "equals": ["nextjs-app"] },
+    { "file": "template.json", "path": "create-scaffold-hbar.capabilities.solidityFramework", "equals": ["hardhat"] },
+    { "file": "package.json", "path": "packageManager", "equals": "yarn@3.2.3" }
+  ],
+  "fileAssertions": {
+    "required": [
+      "template.json",
+      "README.md",
+      "RUNBOOK.md",
+      "AGENTS.md",
+      "LICENCE",
+      "docker-compose.yml",
+      ".env.example",
+      "package.json",
+      "packages/hardhat/contracts/InvoiceRegistry.sol",
+      "packages/hardhat/test/InvoiceRegistry.test.ts",
+      "packages/ledger/prisma/schema.prisma",
+      "packages/ledger/src/money.ts",
+      "packages/ledger/src/invoice.ts",
+      "packages/ledger/test/ledger.test.ts",
+      "packages/nextjs/package.json",
+      "services/reconciler/src/cli.ts"
+    ],
+    "forbidden": [
+      ".env",
+      "packages/nextjs/.env",
+      "packages/hardhat/.account",
+      "packages/hardhat/deployments/hederaMainnet.json"
+    ]
+  },
+  "textAssertions": [
+    {
+      "file": "README.md",
+      "contains": ["Custody model", "InvoiceRegistry", "HCS", "HTS", "Mirror Node"]
+    },
+    {
+      "file": "README.md",
+      "contains": ["yarn ledger:up", "yarn hardhat:deploy", "yarn reconciler:dev"]
+    },
+    {
+      "file": "AGENTS.md",
+      "contains": ["bigint", "custodian", "state machine"]
+    },
+    {
+      "file": "packages/hardhat/contracts/InvoiceRegistry.sol",
+      "contains": ["0x167", "transferFrom", "attestHbarSettlement"]
+    },
+    {
+      "file": "harness/docs/prds/merchant-payments.md",
+      "contains": ["Hedera Token Service", "Consensus Service", "Mirror Node"]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+# Tier 2 smoke gate — boot the gateway and check the critical routes render.
+# Keep this thin: deep product semantics live in contracts/merchant-payments-acceptance.json (Tier 3).
+name: merchant-payments-smoke
+server:
+  command: yarn next:dev
+  url: http://localhost:3000
+  readyTimeoutMs: 120000
+routes:
+  - path: /
+    expect: 200
+    description: Merchant dashboard (invoice list) renders.
+  - path: /new
+    expect: 200
+    description: Invoice creation form renders.
+forbidden:
+  visibleText:
+    - "Internal Server Error"
+    - "Application error"
+    - "Unhandled Runtime Error"
+    - "This page could not be found"
+    - "failed to compile"

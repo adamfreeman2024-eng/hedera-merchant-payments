@@ -1,0 +1,104 @@
+{
+  "name": "merchant-payments-acceptance",
+  "template": "hedera-merchant-payments",
+  "prd": "harness/docs/prds/merchant-payments.md",
+  "version": 1,
+  "description": "Browser-verifiable acceptance contract for the merchant payment gateway. The semantic validator grades the running app against these assertions — not the raw PRD.",
+  "routes": ["/", "/new", "/pay/[invoiceId]", "/api/invoices", "/api/invoices/[invoiceId]"],
+  "evaluationRules": {
+    "posture": "adversarial",
+    "failOnUncertainty": "If an assertion cannot be positively verified from the running app, mark it FAILED. Absence of evidence is a failure.",
+    "credentials": "The dashboard and checkout must render without any .env, private keys or funded account. Missing credentials must not excuse a broken read path.",
+    "walletGatedFlows": "Without a Test Signer, walletRequired assertions are affordance-only (button exists, wallet modal/QR offered, no uncaught errors). With a Test Signer and chainValidation enabled, executableWithTestSigner assertions MUST complete a real transaction and be verified against the testnet mirror node.",
+    "onChainVerification": "For executableWithTestSigner assertions confirm effects via https://testnet.mirrornode.hedera.com (account transfers, topic messages, contract results). Poll up to ~30s for mirror lag.",
+    "evidence": "Every verdict issue must cite what was observed: route visited, element found/absent, console output, mirror responses.",
+    "severityMeaning": {
+      "critical": "Route/app broken or a core journey impossible; run cannot pass.",
+      "major": "A required PRD capability missing or non-functional at read/affordance level.",
+      "minor": "Coherence or documentation gap that degrades the demo but breaks no journey."
+    }
+  },
+  "assertions": [
+    {
+      "id": "C1",
+      "journey": "Open the merchant dashboard",
+      "route": "/",
+      "severity": "critical",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true,
+      "statement": "The dashboard renders the invoice list UI with no wallet connection and no uncaught errors.",
+      "howToVerify": "Navigate to /. Assert primary content (invoice table or empty state) is visible, and the console shows no uncaught errors or crash banners (Internal Server Error, Application error, Unhandled Runtime Error)."
+    },
+    {
+      "id": "C2",
+      "journey": "Issue an invoice",
+      "route": "/new",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true,
+      "statement": "The invoice form captures amount, currency (HBAR or an HTS token id) and expiry, and submitting it produces an invoice identified by an id and a payment memo of the form HMP-<ID>.",
+      "howToVerify": "Open /new. Assert the form exposes amount + currency + expiry inputs. Submit a valid amount (e.g. 0.5 HBAR, 15 minutes). Assert a new entry appears on / with a non-empty id, an OPEN status, and a memo matching ^HMP-[A-Z0-9]{6,32}$. Also assert an invalid amount (e.g. 0 or 'abc') is rejected with a visible message rather than a crash."
+    },
+    {
+      "id": "C3",
+      "journey": "Pay an invoice",
+      "route": "/pay/[invoiceId]",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true,
+      "statement": "The hosted checkout for an open invoice shows the exact amount, the merchant destination account, the required memo, the payment currency and the expiry — enough for a customer to pay from any wallet.",
+      "howToVerify": "Open the checkout link for the invoice created in C2. Assert the page shows: the amount with the correct unit, the merchant account id (0.0.x), the memo verbatim, and the expiry time. Assert a QR code or wallet deep-link affordance is present."
+    },
+    {
+      "id": "C4",
+      "journey": "Pay an invoice",
+      "route": "/pay/[invoiceId]",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true,
+      "statement": "The checkout distinguishes the two payment paths: a native HBAR transfer carrying the memo, and an HTS-token payment that requires an approval (HIP-336 allowance) before the atomic settlement call.",
+      "howToVerify": "On the checkout route assert both paths are described/labelled in the UI. For an HTS-configured deployment assert the approval step is shown before the pay action; for HBAR assert the memo requirement is called out explicitly with the exact memo string."
+    },
+    {
+      "id": "C5",
+      "journey": "Pay an invoice",
+      "route": "/pay/[invoiceId]",
+      "severity": "major",
+      "walletRequired": true,
+      "verifiableWithoutCredentials": false,
+      "statement": "A customer can initiate payment from the page: the primary pay action opens a wallet connection (or deep-links to HashPack) without uncaught errors.",
+      "howToVerify": "Click the primary pay action on the checkout page. Assert a wallet modal/connect affordance appears (or an error is surfaced in the UI, not the console), and no uncaught exception is thrown."
+    },
+    {
+      "id": "C6",
+      "journey": "Settle and reconcile",
+      "route": "/pay/[invoiceId]",
+      "severity": "critical",
+      "walletRequired": true,
+      "verifiableWithoutCredentials": false,
+      "executableWithTestSigner": true,
+      "statement": "A real payment to the merchant account carrying the invoice memo settles the invoice: the status becomes SETTLED and the payment transaction id is recorded.",
+      "howToVerify": "With a test signer, send the invoice amount to the merchant account with the memo shown at checkout (HBAR path) — or approve + call the HTS path. Poll the merchant account on the testnet mirror node for the transfer. Then assert the invoice status is SETTLED and the recorded payment transaction id matches the mirror node transaction."
+    },
+    {
+      "id": "C7",
+      "journey": "Settle and reconcile",
+      "route": "/",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true,
+      "statement": "The dashboard exposes settlement evidence for a settled invoice: the payment transaction reference and (when a receipt topic is configured) the HCS sequence number, each linkable to HashScan.",
+      "howToVerify": "For the settled invoice assert the detail view shows the payment tx id and, if HCS_RECEIPT_TOPIC_ID is configured, a sequence number, plus a link to the network explorer (hashscan.io)."
+    },
+    {
+      "id": "C8",
+      "journey": "Expire and notify",
+      "route": "/",
+      "severity": "minor",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true,
+      "statement": "An invoice past its expiry is reported as expired rather than open, and the worker can retry webhook delivery without losing the settlement.",
+      "howToVerify": "Create an invoice with a 1-minute expiry and do not pay it. Assert the dashboard reports it as EXPIRED (or 'unpaid/expired') after the deadline rather than claiming it is payable. Assert a webhook delivery record exists when MERCHANT_WEBHOOK_URL is configured, with attempts/status visible."
+    }
+  ]
+}

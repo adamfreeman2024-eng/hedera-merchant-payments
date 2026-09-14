@@ -10,8 +10,12 @@ Everything below is copy-paste; nothing is assumed.
 | Tool | Version | Check |
 |---|---|---|
 | Node.js | ≥ 20.18.3 | `node -v` |
-| Yarn (or npm) | Yarn 4 / npm 10 | `yarn -v` |
+| Yarn | any launcher (the repo ships Yarn 3.2.3 itself) | `yarn -v` |
 | Docker (for Postgres) | any recent | `docker compose version` |
+
+The repo vendors its package manager at `.yarn/releases/yarn-3.2.3.cjs`, so you and CI run
+the exact same Yarn. Without a global `yarn`: `node .yarn/releases/yarn-3.2.3.cjs install`.
+npm works too (`npm install`).
 
 Hedera testnet accounts are free: https://portal.hedera.com/faucet (and a funded testnet
 account is required for the operator).
@@ -23,8 +27,12 @@ account is required for the operator).
 ```bash
 npm create scaffold-hbar@latest merchant-payments -- --template <owner>/hedera-merchant-payments
 cd merchant-payments
-yarn install        # or: npm install
+yarn install        # or: npm install      (~2 min)
+yarn verify         # typecheck + contract tests + ledger tests — green out of the box
 ```
+
+`yarn verify` needs no `.env`, no database and no Hedera account: the contract and the
+domain rules are exercised in isolation. If it is green, your toolchain is fine.
 
 ## 2. Environment
 
@@ -51,12 +59,18 @@ WEBHOOK_SIGNING_SECRET=whsec_dev_local_change_me
 ## 3. Database
 
 ```bash
-yarn ledger:up        # starts Postgres 16 in docker
-yarn db:migrate       # creates the Invoice + WebhookDelivery tables
+yarn ledger:up        # starts Postgres 16 in docker (bound to 127.0.0.1 only)
+yarn db:migrate       # applies the committed migration + generates the Prisma client
 ```
 
-Verify: `yarn workspace @hmp/ledger prisma:generate` then
-`docker compose exec postgres psql -U merchant -d merchant_payments -c '\dt'`
+Verify:
+
+```bash
+docker compose exec postgres psql -U merchant -d merchant_payments -c '\dt'
+yarn smoke:testnet    # read-only readiness probe: ledger, merchant account, HCS topic, registry
+```
+
+`yarn smoke:testnet` spends nothing and exits non-zero, listing exactly what is missing.
 
 ## 4. Gateway + merchant accounts
 

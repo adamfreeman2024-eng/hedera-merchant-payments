@@ -9,9 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hashgraph/sdk": "^2.81.0",
     "@hmp/ledger": "*",
-    "@prisma/client": "^5.22.0",
+    "@hashgraph/sdk": "^2.81.0",
     "@rainbow-me/rainbowkit": "^2.2.1",
     "@tanstack/react-query": "^5.62.7",
     "next": "^15.1.3",

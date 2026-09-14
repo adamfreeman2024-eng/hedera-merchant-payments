@@ -1,5 +1,5 @@
 import { JsonRpcProvider } from "ethers";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@hmp/ledger";
 import { MirrorNodeClient } from "./mirror.js";
 import { loadEnv } from "./env.js";
 

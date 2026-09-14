@@ -67,6 +67,21 @@ function registryContract(env: Env) {
   return new Contract(env.registryAddress, REGISTRY_ABI, wallet);
 }
 
+/** Prisma returns Decimal for the amount column — normalise without losing precision. */
+export function asBigInt(value: unknown): bigint {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return BigInt(Math.trunc(value));
+  return BigInt(String(value));
+}
+
+export type SettleableInvoice = {
+  id: string;
+  merchantAccount: string;
+  token: string;
+  amount: unknown; // Prisma Decimal | bigint | number | string
+  memo: string;
+};
+
 export class Reconciler {
   constructor(
     private readonly env: Env,
@@ -127,7 +142,7 @@ export class Reconciler {
         if (invoice.status !== "OPEN") continue;
         summary.matched.push(invoice.id);
 
-        const expected = BigInt(invoice.amount.toString());
+        const expected = asBigInt(invoice.amount);
         const received =
           invoice.token === "HBAR"
             ? hbarReceivedBy(tx, this.env.merchantAccountId)
@@ -218,7 +233,7 @@ export class Reconciler {
 
   /** Marks the invoice paid, writes the HCS receipt and queues the webhook. */
   async settle(
-    invoice: { id: string; merchantAccount: string; token: string; amount: bigint | number; memo: string },
+    invoice: SettleableInvoice,
     payment: { payer: string | null; txId: string; consensusAt: number }
   ) {
     await this.prisma.invoice.update({
@@ -241,7 +256,7 @@ export class Reconciler {
   }
 
   private async appendReceipt(
-    invoice: { id: string; merchantAccount: string; token: string; amount: bigint | number; memo: string },
+    invoice: SettleableInvoice,
     kind: Receipt["kind"],
     count: (n: number) => void,
     extra: { paymentTxId?: string; paidBy?: string } = {}

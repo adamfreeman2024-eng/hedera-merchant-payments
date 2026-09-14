@@ -140,6 +140,28 @@ Verified locally (commands and results, not claims):
 | Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **10 passing** (units, memo, state machine, webhook signatures) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ scaffolds, manifest validates, outro + `{run:scripts}` render |
 | Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, 8-assertion acceptance contract) | ✅ all valid JSON/YAML; contract: 2 critical / 5 major / 1 minor |
+| App build | `yarn next:build` | ✅ Next.js 15, 7 routes compiled |
+| App read path with **no configuration at all** | `next start` with every env var unset | ✅ dashboard renders with setup guidance, `/new` 200, `/api/health` lists what is missing, `POST /api/invoices` → clean 503 (no crash) |
+| Local end-to-end | docker Postgres + `prisma migrate dev` + app | ✅ create → list → checkout page → invalid amount 400 → cancel |
+| **Testnet end-to-end (chain 296)** | app + worker, real HBAR | ✅ see below |
+
+### Testnet evidence (publicly verifiable, no keys needed)
+
+| Artifact | Value |
+|---|---|
+| InvoiceRegistry | `0xc978548F1c4606CE7A2d15D8ED31Fe88820Df670` |
+| HCS receipt topic | `0.0.10541151` (seq 1, seq 2) |
+| Invoice 1 | `INV-MU1G1FSW443` — 0.5 HBAR, paid by `0.0.10541152`, tx `0.0.10541152-1789402480-818444585` |
+| Invoice 2 | `INV-MU1GDH4M599` — 0.25 HBAR, paid by `0.0.10541152`, tx `0.0.10541152-1789403045-808216195`, attested on-chain |
+| Matching | memo (`HMP-…`) + amount + destination, read from the Mirror Node |
+| Registry read-back | `getInvoice(chainId)` → `SETTLED`, amount `25000000` tinybar, correct memo |
+
+### Known limitations (honest list)
+
+- **HBAR path: the on-chain `payer` is the attesting operator.** The true payer *is* recorded in the ledger row (`paidBy`) and inside the HCS receipt (`paymentTxId`); the HTS path records the real payer because the token transfer carries it. Passing the payer into `attestHbarSettlement` is the planned fix.
+- **EVM wallets cannot attach a Hedera memo**, so a MetaMask-style HBAR transfer will never reconcile — that is why the HTS path exists. The checkout page states this.
+- **No one-click wallet pay yet.** The checkout shows amount, destination, memo, a QR of the checkout link, and both payment paths; the in-browser HTS `approve` + `payInvoiceWithHts` call is the next milestone.
+- **Mirror Node pagination**: the worker scans the first 100 transactions in the lookback window per pass; `links.next` paging is on the roadmap.
 
 - [x] `InvoiceRegistry` with atomic HTS settlement + attested HBAR settlement
 - [x] Ledger domain rules (units, memo, state machine, webhook signing) with unit tests

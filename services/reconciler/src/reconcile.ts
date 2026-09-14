@@ -1,9 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import {
+  Contract,
   Interface,
   JsonRpcProvider,
   Wallet,
-  Contract,
+  ZeroAddress,
   keccak256,
   toUtf8Bytes,
 } from "ethers";
@@ -29,6 +30,7 @@ import {
 } from "./mirror.js";
 
 const REGISTRY_ABI = [
+  "function createInvoice(bytes32 id, address merchant, address token, uint256 amount, uint64 expiresAt, string memo) external",
   "function attestHbarSettlement(bytes32 id, bytes32 hederaTxRef) external",
   "function expireInvoice(bytes32 id) external",
   "function getInvoice(bytes32 id) view returns (tuple(bytes32 id, address merchant, address token, uint256 amount, uint64 expiresAt, uint8 status, address payer, bytes32 settlementRef, string memo))",
@@ -43,6 +45,7 @@ export type ReconcileSummary = {
   webhooksSent: number;
   webhooksFailed: number;
   onChainAttested: string[];
+  onChainRegistered: string[];
   errors: string[];
 };
 
@@ -102,10 +105,27 @@ export class Reconciler {
       webhooksSent: 0,
       webhooksFailed: 0,
       onChainAttested: [],
+      onChainRegistered: [],
       errors: [],
     };
 
     const open = await this.prisma.invoice.findMany({ where: { status: "OPEN" } });
+
+    // 0. publish invoice terms on-chain so they are publicly verifiable before payment.
+    if (opts.attestOnChain && !opts.dryRun && this.env.registryAddress) {
+      for (const invoice of open) {
+        try {
+          const result = await this.ensureOnChainInvoice(invoice);
+          if (result.registered) summary.onChainRegistered.push(invoice.id);
+          else if (result.skipped && result.skipped !== "already on-chain") {
+            summary.errors.push(`register ${invoice.id}: ${result.skipped}`);
+          }
+        } catch (error) {
+          summary.errors.push(`register ${invoice.id}: ${(error as Error).message}`);
+        }
+      }
+    }
+
     if (!open.length && !(await this.prisma.webhookDelivery.count({ where: { delivered: false } }))) {
       return summary;
     }
@@ -229,6 +249,36 @@ export class Reconciler {
     }
 
     return summary;
+  }
+
+  /**
+   * Publishes invoice terms on the InvoiceRegistry so anyone can verify them before paying.
+   * Idempotent: skips invoices that are already registered on-chain.
+   */
+  async ensureOnChainInvoice(
+    invoice: SettleableInvoice & { expiresAt: Date }
+  ): Promise<{ registered: boolean; skipped?: string }> {
+    const contract = registryContract(this.env);
+    if (!contract) return { registered: false, skipped: "no registry address configured" };
+
+    const chainId = chainIdOf(invoice.id);
+    const current = await contract.getInvoice(chainId);
+    if (Number(current.status) !== 0) return { registered: false, skipped: "already on-chain" };
+
+    const merchantEvm = await this.mirror.evmAddressOf(invoice.merchantAccount);
+    if (!merchantEvm) return { registered: false, skipped: "merchant account has no EVM alias" };
+
+    const tokenAddress = invoice.token === "HBAR" ? ZeroAddress : ZeroAddress; // HTS path sets the token address when enabled
+    const tx = await contract.createInvoice(
+      chainId,
+      merchantEvm,
+      tokenAddress,
+      asBigInt(invoice.amount),
+      Math.floor(invoice.expiresAt.getTime() / 1000),
+      invoice.memo
+    );
+    await tx.wait();
+    return { registered: true };
   }
 
   /** Marks the invoice paid, writes the HCS receipt and queues the webhook. */

@@ -10,7 +10,8 @@ services:
       POSTGRES_PASSWORD: merchant
       POSTGRES_DB: merchant_payments
     ports:
-      - "5432:5432"
+      # Override with POSTGRES_PORT if 5432 is already taken on your machine.
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - hmp-postgres-data:/var/lib/postgresql/data
     healthcheck:

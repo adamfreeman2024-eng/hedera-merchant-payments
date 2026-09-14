@@ -71,17 +71,25 @@ export class MirrorNodeClient {
     return mirrorNodeUrl(this.network);
   }
 
-  /** Transactions involving an account since a timestamp, oldest first. */
+  /**
+   * Transactions involving an account since a timestamp, oldest first.
+   *
+   * Uses the ROOT endpoint with an `account.id` filter on purpose:
+   * `/api/v1/accounts/{id}/transactions` answers 404 on Hedera testnet even when the
+   * account exists and has activity, while `/api/v1/transactions?account.id=…` works.
+   * A 404 from the mirror simply means "nothing in this range", not an error.
+   */
   async transactionsForAccount(
     accountId: string,
     opts: { since?: number; limit?: number } = {}
   ): Promise<MirrorTransaction[]> {
     const limit = opts.limit ?? 100;
-    const params = new URLSearchParams({ limit: String(limit), order: "asc" });
+    const params = new URLSearchParams({ "account.id": accountId, limit: String(limit), order: "asc" });
     if (opts.since) params.set("timestamp", `gte:${(opts.since / 1000).toFixed(9)}`);
-    const url = `${this.base}/api/v1/accounts/${accountId}/transactions?${params.toString()}`;
+    const url = `${this.base}/api/v1/transactions?${params.toString()}`;
 
     const res = await this.fetchImpl(url, { signal: AbortSignal.timeout(20_000) });
+    if (res.status === 404) return []; // empty result set
     if (!res.ok) throw new Error(`Mirror Node ${res.status} for ${url}`);
     const page = (await res.json()) as MirrorPage;
     return page.transactions ?? [];
@@ -93,5 +101,18 @@ export class MirrorNodeClient {
       .filter((t) => t.amount < 0 && t.account !== accountId && !t.account.startsWith("0.0.80"))
       .map((t) => t.account);
     return [...new Set(senders)];
+  }
+
+  /**
+   * EVM address of a Hedera account (needed to register invoices on-chain).
+   * ECDSA accounts always have an alias-derived EVM address; returns null otherwise.
+   */
+  async evmAddressOf(accountId: string): Promise<string | null> {
+    const res = await this.fetchImpl(`${this.base}/api/v1/accounts/${accountId}`, {
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { evm_address?: string | null };
+    return data.evm_address ?? null;
   }
 }

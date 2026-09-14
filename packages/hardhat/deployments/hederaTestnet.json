@@ -1,0 +1,9 @@
+{
+  "network": "hederaTestnet",
+  "chainId": 296,
+  "address": "0xc978548F1c4606CE7A2d15D8ED31Fe88820Df670",
+  "owner": "0x5be3EbB716530be726A117044113001fB728595E",
+  "operator": "0x5be3EbB716530be726A117044113001fB728595E",
+  "deployedAt": "2026-09-14T16:13:48.755Z",
+  "deployTxHash": "0x4617e19ef194bd2bf6c3150d2a137c8d0d089f23a36f5843c4d872cc64300f53"
+}

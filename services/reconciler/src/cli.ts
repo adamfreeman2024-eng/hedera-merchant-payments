@@ -10,7 +10,7 @@
  *   tsx src/cli.ts --show <invoiceId>       print one invoice as JSON
  *   tsx src/cli.ts                          daemon: reconcile every RECONCILE_POLL_MS
  */
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@hmp/ledger";
 import { hederaClient, createReceiptTopic, toTinybar, fromTinybar } from "@hmp/ledger";
 import { loadEnv, requireEnv } from "./env.js";
 import { Reconciler, createInvoice } from "./reconcile.js";

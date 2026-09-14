@@ -10,8 +10,9 @@ services:
       POSTGRES_PASSWORD: merchant
       POSTGRES_DB: merchant_payments
     ports:
-      # Override with POSTGRES_PORT if 5432 is already taken on your machine.
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Bound to loopback on purpose: the ledger must never be reachable from the
+      # internet. Override the port with POSTGRES_PORT if 5432 is taken locally.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - hmp-postgres-data:/var/lib/postgresql/data
     healthcheck:

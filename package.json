@@ -24,6 +24,7 @@
     "hardhat:verify:testnet": "yarn workspace @hmp/hardhat verify:testnet",
     "hardhat:verify:mainnet": "yarn workspace @hmp/hardhat verify:mainnet",
     "hardhat:chain": "yarn workspace @hmp/hardhat chain",
+    "hardhat:account": "yarn workspace @hmp/hardhat account",
     "hardhat:account:generate": "yarn workspace @hmp/hardhat account:generate",
     "ledger:test": "yarn workspace @hmp/ledger test",
     "next:dev": "yarn workspace @hmp/nextjs dev",
@@ -31,8 +32,9 @@
     "next:start": "yarn workspace @hmp/nextjs start",
     "reconciler:dev": "yarn workspace @hmp/reconciler dev",
     "reconciler:once": "yarn workspace @hmp/reconciler once",
-    "typecheck": "yarn hardhat:compile && yarn workspace @hmp/ledger typecheck && yarn workspace @hmp/hardhat check-types && yarn workspace @hmp/reconciler typecheck && yarn workspace @hmp/nextjs typecheck",
-    "test": "yarn hardhat:test && yarn ledger:test",
+    "smoke:testnet": "yarn db:generate && yarn workspace @hmp/reconciler smoke:testnet",
+    "typecheck": "yarn db:generate && yarn hardhat:compile && yarn workspace @hmp/ledger typecheck && yarn workspace @hmp/hardhat check-types && yarn workspace @hmp/reconciler typecheck && yarn workspace @hmp/nextjs typecheck",
+    "test": "yarn db:generate && yarn hardhat:test && yarn ledger:test",
     "verify": "yarn typecheck && yarn test"
   },
   "devDependencies": {

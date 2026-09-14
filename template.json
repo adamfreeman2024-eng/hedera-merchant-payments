@@ -1,0 +1,62 @@
+{
+  "name": "hedera-merchant-payments",
+  "description": "Non-custodial merchant payment gateway on Hedera: on-chain invoices (InvoiceRegistry), HTS token + HBAR checkout, Mirror Node reconciliation worker, HCS settlement receipts, signed webhooks, refunds via Hedera Schedule Service.",
+  "version": "0.1.0",
+  "create-scaffold-hbar": {
+    "capabilities": {
+      "frontend": ["nextjs-app"],
+      "solidityFramework": ["hardhat"],
+      "packageManager": ["yarn", "npm"]
+    },
+    "defaults": {
+      "frontend": "nextjs-app",
+      "solidityFramework": "hardhat",
+      "packageManager": "yarn"
+    },
+    "requirements": {
+      "node": ">=20.18.3"
+    },
+    "envVars": [
+      { "key": "HEDERA_NETWORK", "description": "testnet | mainnet | local" },
+      { "key": "HEDERA_OPERATOR_ID", "description": "Gateway operator account (ECDSA) — pays for HCS receipt topics and refund scheduling; never holds customer funds" },
+      { "key": "HEDERA_OPERATOR_KEY", "description": "ECDSA private key for the operator account above" },
+      { "key": "MERCHANT_ACCOUNT_ID", "description": "Merchant settlement account — customer payments land here directly (non-custodial)" },
+      { "key": "PAYMENT_TOKEN_ID", "description": "HTS token accepted for checkout (e.g. testnet USDC); leave empty to accept HBAR only" },
+      { "key": "INVOICE_REGISTRY_ADDRESS", "description": "Deployed InvoiceRegistry address (from `hardhat:deploy`)" },
+      { "key": "HCS_RECEIPT_TOPIC_ID", "description": "HCS topic collecting settlement receipts (created by `reconciler:once --init-topic`)" },
+      { "key": "DATABASE_URL", "description": "Postgres connection string for the invoice ledger" },
+      { "key": "WEBHOOK_SIGNING_SECRET", "description": "HMAC-SHA256 secret used to sign outbound webhooks" }
+    ],
+    "instructions": [
+      "The gateway is NON-CUSTODIAL: customers pay the merchant account directly; this software only issues invoices, verifies settlement, writes HCS receipts and calls webhooks.",
+      "Run `hardhat:deploy --network hederaTestnet` before starting the dashboard, then paste INVOICE_REGISTRY_ADDRESS into .env."
+    ],
+    "outro": {
+      "sections": [
+        {
+          "steps": [
+            {
+              "text": "Merchant payment gateway — customers pay an invoice straight to the merchant account; the gateway verifies, receipts (HCS) and notifies (signed webhooks)."
+            }
+          ]
+        },
+        {
+          "title": "Next steps",
+          "steps": [
+            { "label": "Copy environment files", "command": "cp .env.example .env" },
+            { "command": "cp packages/nextjs/.env.example packages/nextjs/.env" },
+            { "label": "Start the local ledger (Postgres)", "command": "{run:ledger:up}" },
+            { "label": "Apply the database schema", "command": "{run:db:migrate}" },
+            { "label": "Generate a deployer/operator account", "command": "{run:hardhat:account:generate}" },
+            { "label": "Fund it with testnet HBAR", "url": "https://portal.hedera.com/faucet" },
+            { "label": "Deploy InvoiceRegistry to Hedera testnet", "command": "{run:hardhat:deploy} --network hederaTestnet" },
+            { "label": "Initialise the HCS receipt topic", "command": "{run:reconciler:once} --init-topic" },
+            { "label": "Run the contract tests", "command": "{run:hardhat:test}" },
+            { "label": "Start the merchant dashboard", "command": "{run:next:dev}" },
+            { "label": "Run the reconciliation worker (second terminal)", "command": "{run:reconciler:dev}" }
+          ]
+        }
+      ]
+    }
+  }
+}

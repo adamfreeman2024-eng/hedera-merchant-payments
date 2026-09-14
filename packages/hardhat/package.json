@@ -1,0 +1,38 @@
+{
+  "name": "@hmp/hardhat",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "account": "hardhat run scripts/listAccount.ts",
+    "account:generate": "hardhat run scripts/generateAccount.ts",
+    "check-types": "tsc --noEmit --incremental",
+    "clean": "hardhat clean",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run deploy/00_deploy_invoice_registry.ts",
+    "test": "REPORT_GAS=true hardhat test",
+    "verify:testnet": "hardhat run scripts/verifyDeployed.ts --network hederaTestnet",
+    "verify:mainnet": "hardhat run scripts/verifyDeployed.ts --network hederaMainnet"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "@nomicfoundation/hardhat-network-helpers": "^1.1.2",
+    "@nomicfoundation/hardhat-verify": "^2.0.11",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/chai": "^4.3.19",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.14.10",
+    "chai": "^4.4.1",
+    "ethers": "^6.13.2",
+    "hardhat": "^2.22.19",
+    "hardhat-gas-reporter": "^2.2.1",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.5.4"
+  }
+}

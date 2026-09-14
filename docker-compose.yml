@@ -1,0 +1,23 @@
+# Local ledger for the merchant payment gateway.
+# Only infrastructure lives here: the gateway itself runs in the app + worker.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hmp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: merchant
+      POSTGRES_PASSWORD: merchant
+      POSTGRES_DB: merchant_payments
+    ports:
+      - "5432:5432"
+    volumes:
+      - hmp-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U merchant -d merchant_payments"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  hmp-postgres-data:

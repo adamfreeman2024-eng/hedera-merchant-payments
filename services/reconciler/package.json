@@ -1,0 +1,28 @@
+{
+  "name": "@hmp/reconciler",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": { "hmp-reconciler": "dist/cli.js" },
+  "scripts": {
+    "dev": "tsx watch src/cli.ts --watch",
+    "once": "tsx src/cli.ts",
+    "smoke:testnet": "tsx src/smoke.ts",
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hmp/ledger": "*",
+    "@hashgraph/sdk": "^2.81.0",
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "hedera-merchant-payments",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Non-custodial merchant payment gateway for Hedera: on-chain invoices, HTS/HBAR settlement, Mirror Node reconciliation, HCS receipts, webhooks.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.18.3"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "postinstall": "husky || true",
+    "ledger:up": "docker compose up -d postgres",
+    "ledger:down": "docker compose down",
+    "db:generate": "yarn workspace reconciler prisma:generate",
+    "db:migrate": "yarn workspace reconciler prisma:migrate",
+    "hardhat:account:generate": "yarn workspace hardhat account:generate",
+    "hardhat:compile": "yarn workspace hardhat compile",
+    "hardhat:test": "yarn workspace hardhat test",
+    "hardhat:deploy": "yarn workspace hardhat deploy",
+    "hardhat:verify:testnet": "yarn workspace hardhat verify:testnet",
+    "hardhat:chain": "yarn workspace hardhat chain",
+    "next:dev": "yarn workspace nextjs dev",
+    "next:build": "yarn workspace nextjs build",
+    "next:start": "yarn workspace nextjs start",
+    "next:lint": "yarn workspace nextjs lint",
+    "reconciler:dev": "yarn workspace reconciler dev",
+    "reconciler:once": "yarn workspace reconciler once",
+    "smoke:testnet": "yarn workspace reconciler smoke:testnet",
+    "lint": "yarn next:lint",
+    "typecheck": "yarn workspace nextjs typecheck && yarn workspace hardhat typecheck && yarn workspace reconciler typecheck",
+    "test": "yarn hardhat:test"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
+  }
+}

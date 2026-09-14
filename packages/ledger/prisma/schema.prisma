@@ -1,0 +1,59 @@
+// Invoice ledger for the merchant payment gateway.
+// Holds ONLY gateway metadata — never customer funds or private keys.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Invoice {
+  id              String        @id
+  chainId         Bytes         @unique // keccak256(invoiceId) — the on-chain key
+  merchantId      String
+  merchantAccount String // Hedera account id receiving the funds
+  token           String // "HBAR" or an HTS token id
+  tokenEvmAddress String? // 0x… for the HTS contract path
+  amount          Decimal       @db.Decimal(30, 0) // tinybar / base units
+  memo            String // payment memo customers must include
+  status          InvoiceStatus @default(OPEN)
+  expiresAt       DateTime
+  createdAt       DateTime      @default(now())
+  settledAt       DateTime?
+  paidBy          String? // Hedera account id of the payer
+  paymentTxId     String? // Hedera transaction id observed on the Mirror Node
+  hcsSequence     Int? // HCS receipt sequence number
+  onChainTxHash   String? // registry tx hash (create/settle)
+  webhooks        WebhookDelivery[]
+
+  @@index([status, expiresAt])
+  @@index([merchantId, createdAt])
+}
+
+model WebhookDelivery {
+  id         String    @id @default(cuid())
+  invoiceId  String
+  invoice    Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  event      String // invoice.paid | invoice.expired | invoice.cancelled
+  url        String
+  attempts   Int       @default(0)
+  statusCode Int?
+  delivered  Boolean   @default(false)
+  lastError  String?
+  signature  String // HMAC-SHA256 of the raw body sent to the merchant
+  payload    Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([delivered, createdAt])
+}
+
+enum InvoiceStatus {
+  OPEN
+  SETTLED
+  CANCELLED
+  EXPIRED
+}

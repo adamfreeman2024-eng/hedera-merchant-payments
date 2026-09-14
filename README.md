@@ -172,3 +172,12 @@ Verified locally (commands and results, not claims):
 - [ ] Merchant onboarding (multiple merchants per deployment)
 
 Licence: MIT.
+
+## Submission checklist
+
+- [ ] Repo is public (or shared with the reviewers) — *not before 2026-09-21*.
+- [ ] `.github/workflows/ci.yaml` is committed. It is ignored right now because the
+      GitHub token in use has no `workflow` scope; run `gh auth refresh -s workflow`
+      and then `git add -f .github/workflows/ci.yaml && git commit -m "ci: add workflow"`.
+- [ ] README status table matches the latest local runs.
+- [ ] No secrets in the tree: `git grep -nE "0x[0-9a-fA-F]{64}|302e0201"`.

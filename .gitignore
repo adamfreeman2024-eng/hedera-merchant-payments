@@ -29,3 +29,8 @@ coverage/
 .DS_Store
 tmp/
 packages/hardhat/deployments/localhost/
+
+# CI workflow is kept locally but not pushed: the current GitHub token lacks
+# the `workflow` scope. Run `gh auth refresh -s workflow`, then:
+#   git add -f .github/workflows/ci.yaml && git commit -m "ci: add workflow"
+.github/workflows/

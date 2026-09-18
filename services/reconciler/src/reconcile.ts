@@ -34,6 +34,7 @@ const REGISTRY_ABI = [
   "function createInvoice(bytes32 id, address merchant, address token, uint256 amount, uint64 expiresAt, string memo) external",
   "function attestHbarSettlement(bytes32 id, bytes32 hederaTxRef, address payer) external",
   "function expireInvoice(bytes32 id) external",
+  "function scheduleExpire(bytes32 id) external returns (address)",
   "function getInvoice(bytes32 id) view returns (tuple(bytes32 id, address merchant, address token, uint256 amount, uint64 expiresAt, uint8 status, address payer, bytes32 settlementRef, string memo))",
 ];
 
@@ -289,7 +290,8 @@ export class Reconciler {
     const merchantEvm = await this.mirror.evmAddressOf(invoice.merchantAccount);
     if (!merchantEvm) return { registered: false, skipped: "merchant account has no EVM alias" };
 
-    const tokenAddress = invoice.token === "HBAR" ? ZeroAddress : ZeroAddress; // HTS path sets the token address when enabled
+    const tokenAddress =
+      invoice.token === "HBAR" ? ZeroAddress : hederaEntityToEvm(invoice.token);
     const tx = await contract.createInvoice(
       chainId,
       merchantEvm,
@@ -299,6 +301,12 @@ export class Reconciler {
       invoice.memo
     );
     await tx.wait();
+    try {
+      const sched = await contract.scheduleExpire(chainId);
+      await sched.wait();
+    } catch (error) {
+      return { registered: true, skipped: `scheduled expire failed: ${(error as Error).message}` };
+    }
     return { registered: true };
   }
 

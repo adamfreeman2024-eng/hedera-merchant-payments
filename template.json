@@ -37,7 +37,7 @@
         {
           "steps": [
             {
-              "text": "Merchant payment gateway — customers pay an invoice straight to the merchant account; the gateway verifies, receipts (HCS) and notifies (signed webhooks)."
+              "text": "Merchant payment gateway — pay HBAR, the invoice HTS token, or any other HTS token via SaucerSwap V1 in the same transaction. The gateway never keeps the money."
             }
           ]
         },

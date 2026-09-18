@@ -16,8 +16,7 @@ agent, read this file before editing.
 
 ## Non-negotiable rules
 
-1. **Never make the gateway a custodian.** Funds must move payer → merchant. No code path may
-   route a customer payment through the operator account, the gateway, or a contract balance.
+1. **Never make the gateway a lingering custodian.** Direct HTS/HBAR paths move payer → merchant with no hop. The SaucerSwap path may pull `tokenIn` into the registry **inside the same transaction**, swap, and send `tokenOut` to the merchant; leftover `tokenIn` returns to the payer. End-of-transaction balances on the registry must be zero. No code path may hold a customer balance across transactions or send funds to the operator.
 2. **Amounts are `bigint` base units** end-to-end. Never use floats or `Number` for money.
    Use `toBaseUnits` / `fromBaseUnits` from `@hmp/ledger`.
 3. **The invoice state machine is one-way** (`OPEN → SETTLED | CANCELLED | EXPIRED`).

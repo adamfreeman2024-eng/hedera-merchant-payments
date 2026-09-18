@@ -30,6 +30,7 @@ That is what this template ships.
 | Hosted checkout page | `/pay/[invoiceId]` — QR + one-click pay |
 | Pay in HBAR | native `CryptoTransfer` with the invoice memo `HMP-<ID>` |
 | Pay in an HTS token (e.g. testnet USDC) | **atomic on-chain settlement**: `approve` (HIP-336) then the registry calls `HTS.transferFrom(payer → merchant)` inside the same transaction |
+| Pay in **any other HTS token** | **SaucerSwap V1** `swapExactTokensForTokens` in the same transaction (`payInvoiceWithSwap`). Merchant still receives the invoice token. Without the DEX this path does not exist — that is the load-bearing integration. |
 | Verify settlement | Mirror Node polling worker matches transfers by memo + amount + merchant account |
 | Tamper-evident receipts | every event appended to an **HCS** topic; the sequence number is stored with the invoice |
 | Merchant notification | **signed webhooks** (`sha256` HMAC of `timestamp.body`) with retries |
@@ -40,9 +41,9 @@ That is what this template ships.
 
 ```
 customer wallet ──HBAR transfer (memo HMP-INV…)──────────────▶ merchant account
-                 └─HTS: approve ──▶ InvoiceRegistry ──transferFrom──▶ merchant account
-                                        │
-                                        └─ only records: id, terms, status, settlement ref
+                 └─HTS same-token: approve ──▶ InvoiceRegistry ──transferFrom──▶ merchant
+                 └─HTS any-token:  approve ──▶ InvoiceRegistry ──SaucerSwap V1──▶ merchant
+                                                    (atomic hop; leftover tokenIn refunded)
 ```
 
 - Customer funds move **payer → merchant**. They never touch the gateway, the operator
@@ -61,6 +62,7 @@ customer wallet ──HBAR transfer (memo HMP-INV…)─────────
 | Service | Usage |
 |---|---|
 | **Hedera Token Service (HTS)** | token payments via the `0x167` system contract using HIP-336 allowances (`approve` / `allowance` / `transferFrom`) |
+| **SaucerSwap V1 (ecosystem)** | load-bearing DEX: `payInvoiceWithSwap` quotes one asset, accepts another. Testnet router `0.0.19264`, mainnet `0.0.3045981`. If a pair has no testnet pool, document a forked-mainnet / read-only quote as the brief allows. |
 | **Consensus Service (HCS)** | settlement/expiry/cancel receipts (`TopicMessageSubmitTransaction`) |
 | **Smart Contracts** | `InvoiceRegistry` invoice ledger (OpenZeppelin `Ownable` for key rotation) |
 | **Mirror Node REST** | reconciliation of native HBAR transfers by memo, amount and destination |

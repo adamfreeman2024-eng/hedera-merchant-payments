@@ -175,4 +175,57 @@ describe("InvoiceRegistry", () => {
       "OwnableUnauthorizedAccount"
     );
   });
+
+  describe("SaucerSwap any-token settlement", () => {
+    async function deploySwap() {
+      const ctx = await deploy();
+      const tokenIn = await (await ethers.getContractFactory("MockERC20")).deploy("SAUCE", "SAUCE");
+      const tokenOut = await (await ethers.getContractFactory("MockERC20")).deploy("USDC", "USDC");
+      const router = await (await ethers.getContractFactory("MockSaucerRouter")).deploy();
+      await tokenIn.waitForDeployment();
+      await tokenOut.waitForDeployment();
+      await router.waitForDeployment();
+      await ctx.registry.connect(ctx.owner).setSaucerRouter(await router.getAddress());
+      return { ...ctx, tokenIn, tokenOut, router };
+    }
+
+    it("reverts swap pay when no router is configured", async () => {
+      const { registry, operator, merchant, payer } = await deploy();
+      const token = "0x00000000000000000000000000000000000004a2";
+      const { id } = await openInvoice(registry, operator, merchant, token, 50n, "swap-off");
+      await expect(
+        registry.connect(payer).payInvoiceWithSwap(id, 80n, [token, token], (await time.latest()) + 60)
+      ).to.be.revertedWithCustomError(registry, "RouterNotSet");
+    });
+
+    it("swaps tokenIn → invoice token and pays the merchant atomically", async () => {
+      const { registry, operator, merchant, payer, tokenIn, tokenOut } = await deploySwap();
+      const outAddr = await tokenOut.getAddress();
+      const inAddr = await tokenIn.getAddress();
+      const { id } = await openInvoice(registry, operator, merchant, outAddr, 50n, "swap-1");
+
+      await tokenIn.mint(payer.address, 80n);
+      await tokenIn.connect(payer).approve(await registry.getAddress(), 80n);
+
+      await expect(
+        registry.connect(payer).payInvoiceWithSwap(id, 80n, [inAddr, outAddr], (await time.latest()) + 120)
+      )
+        .to.emit(registry, "InvoiceSettled")
+        .withArgs(id, payer.address, outAddr, 50n, ethers.zeroPadValue(payer.address, 32), true);
+
+      expect((await registry.getInvoice(id)).status).to.equal(2n);
+      expect(await tokenOut.balanceOf(merchant.address)).to.equal(50n);
+      expect(await tokenIn.balanceOf(await registry.getAddress())).to.equal(0n);
+    });
+
+    it("rejects a path that does not end in the invoice token", async () => {
+      const { registry, operator, merchant, payer, tokenIn, tokenOut } = await deploySwap();
+      const { id } = await openInvoice(registry, operator, merchant, await tokenOut.getAddress(), 10n, "swap-bad");
+      await expect(
+        registry
+          .connect(payer)
+          .payInvoiceWithSwap(id, 10n, [await tokenIn.getAddress(), await tokenIn.getAddress()], (await time.latest()) + 60)
+      ).to.be.revertedWithCustomError(registry, "BadSwapPath");
+    });
+  });
 });

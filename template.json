@@ -21,14 +21,15 @@
       { "key": "HEDERA_OPERATOR_ID", "description": "Gateway operator account (ECDSA) — pays for HCS receipt topics and refund scheduling; never holds customer funds" },
       { "key": "HEDERA_OPERATOR_KEY", "description": "ECDSA private key for the operator account above" },
       { "key": "MERCHANT_ACCOUNT_ID", "description": "Merchant settlement account — customer payments land here directly (non-custodial)" },
-      { "key": "PAYMENT_TOKEN_ID", "description": "HTS token accepted for checkout (e.g. testnet USDC); leave empty to accept HBAR only" },
+      { "key": "PAYMENT_TOKEN_ID", "description": "HTS token the merchant wants to receive (e.g. testnet USDC); leave empty to accept HBAR only" },
+      { "key": "SAUCERSWAP_ROUTER", "description": "SaucerSwap V1 router Hedera id or EVM address (testnet 0.0.19264). Required for any-token checkout; leave empty to disable swaps" },
       { "key": "INVOICE_REGISTRY_ADDRESS", "description": "Deployed InvoiceRegistry address (from `hardhat:deploy`)" },
       { "key": "HCS_RECEIPT_TOPIC_ID", "description": "HCS topic collecting settlement receipts (created by `reconciler:once --init-topic`)" },
       { "key": "DATABASE_URL", "description": "Postgres connection string for the invoice ledger" },
       { "key": "WEBHOOK_SIGNING_SECRET", "description": "HMAC-SHA256 secret used to sign outbound webhooks" }
     ],
     "instructions": [
-      "The gateway is NON-CUSTODIAL: customers pay the merchant account directly; this software only issues invoices, verifies settlement, writes HCS receipts and calls webhooks.",
+      "The gateway is NON-CUSTODIAL: customers pay the merchant, or swap via SaucerSwap in the same transaction. This software only issues invoices, verifies settlement, writes HCS receipts and calls webhooks.",
       "Run `hardhat:deploy --network hederaTestnet` before starting the dashboard, then paste INVOICE_REGISTRY_ADDRESS into .env."
     ],
     "outro": {

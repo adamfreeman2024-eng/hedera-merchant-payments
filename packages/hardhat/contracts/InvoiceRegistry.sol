@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ISaucerRouterV1, IERC20Minimal} from "./ISaucerRouter.sol";
 
 /**
  * Minimal view of the Hedera Token Service (HTS) system contract at 0x167.
@@ -67,6 +68,8 @@ contract InvoiceRegistry is Ownable {
     }
 
     address public operator;
+    /// @dev SaucerSwap V1 router. address(0) disables the any-token swap path.
+    address public saucerRouter;
 
     mapping(bytes32 => Invoice) private _invoices;
     bytes32[] private _invoiceIds;
@@ -98,6 +101,8 @@ contract InvoiceRegistry is Ownable {
     error NotYetExpired();
     error TokenTransferFailed(int256 responseCode);
     error ZeroAmount();
+    error RouterNotSet();
+    error BadSwapPath();
 
     modifier onlyOperator() {
         if (msg.sender != operator && msg.sender != owner()) revert NotOperator();
@@ -114,6 +119,10 @@ contract InvoiceRegistry is Ownable {
     function setOperator(address newOperator) external onlyOwner {
         emit IssuerChanged(operator, newOperator);
         operator = newOperator;
+    }
+
+    function setSaucerRouter(address router) external onlyOwner {
+        saucerRouter = router;
     }
 
     // ------------------------------------------------------------- invoices
@@ -175,6 +184,64 @@ contract InvoiceRegistry is Ownable {
         inv.payer = msg.sender;
         inv.settlementRef = bytes32(uint256(uint160(msg.sender)));
 
+        emit InvoiceSettled(id, msg.sender, inv.token, inv.amount, inv.settlementRef, true);
+    }
+
+    /**
+     * @notice Pays an invoice in ANY HTS token, swapping to the invoice token
+     * via SaucerSwap V1 in the SAME transaction.
+     *
+     * Load-bearing integration: without the DEX the merchant cannot quote one
+     * asset and accept another. Atomic hop: tokenIn is pulled from the payer,
+     * swapped, and tokenOut is sent to `inv.merchant`. The registry must hold
+     * a zero balance of both tokens after the call (no lingering custody).
+     *
+     * `path[0]` is the token the payer holds. `path[last]` MUST be `inv.token`.
+     * `amountInMax` is the most the payer will spend; `amountOutMin` is the
+     * invoice amount.
+     */
+    function payInvoiceWithSwap(
+        bytes32 id,
+        uint256 amountInMax,
+        address[] calldata path,
+        uint256 deadline
+    ) external returns (uint256 amountInUsed) {
+        if (saucerRouter == address(0)) revert RouterNotSet();
+        Invoice storage inv = _invoices[id];
+        if (inv.status != Status.Open) revert InvoiceNotOpen();
+        if (inv.token == address(0)) revert InvalidInvoice();
+        if (block.timestamp > inv.expiresAt) revert InvalidInvoice();
+        if (path.length < 2 || path[path.length - 1] != inv.token) revert BadSwapPath();
+        if (amountInMax == 0) revert ZeroAmount();
+        if (deadline < block.timestamp) revert InvalidInvoice();
+
+        address tokenIn = path[0];
+        if (tokenIn == inv.token) revert BadSwapPath();
+
+        bool pulled = IERC20Minimal(tokenIn).transferFrom(msg.sender, address(this), amountInMax);
+        if (!pulled) revert TokenTransferFailed(0);
+
+        bool ok = IERC20Minimal(tokenIn).approve(saucerRouter, amountInMax);
+        if (!ok) revert TokenTransferFailed(0);
+
+        uint256[] memory amounts = ISaucerRouterV1(saucerRouter).swapExactTokensForTokens(
+            amountInMax,
+            inv.amount,
+            path,
+            inv.merchant,
+            deadline
+        );
+        amountInUsed = amounts[0];
+
+        // Dust of tokenIn (if the router left any) goes back to the payer.
+        uint256 leftover = IERC20Minimal(tokenIn).balanceOf(address(this));
+        if (leftover > 0) {
+            IERC20Minimal(tokenIn).transfer(msg.sender, leftover);
+        }
+
+        inv.status = Status.Settled;
+        inv.payer = msg.sender;
+        inv.settlementRef = bytes32(uint256(uint160(msg.sender)));
         emit InvoiceSettled(id, msg.sender, inv.token, inv.amount, inv.settlementRef, true);
     }
 

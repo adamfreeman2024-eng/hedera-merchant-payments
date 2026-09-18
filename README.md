@@ -157,7 +157,8 @@ Current ABI (18.09.2026) — operator `0.0.9586920` / `0xE1B590d179a8dA38eAE3219
 | Deploy tx | `0.0.7314364-1789727595-506480301` (`0x3adc2d0a…`) |
 | SaucerSwap V1 router | `0.0.19264` (`0x…4b40`) set on the registry in the same session |
 | HIP-1215 `scheduleExpire` | create `0.0.7314364-1789727663-791961116` · schedule `0.0.7314364-1789727671-967513663` · schedule entity `0x…A1c1a6` |
-| SaucerSwap V1 live quote | factory `0.0.9959` (592 pairs) · SAUCE/WHBAR pair `0xfE7CC3cEb7b1128bfC3889184E2d5561BF74bfb3` · `getAmountsOut(1 WHBAR)` → `55098698` SAUCE base units (`yarn hardhat run scripts/quoteSaucer.ts --network hederaTestnet`) |
+| SaucerSwap V1 live quote | factory `0.0.9959` (592 pairs) · SAUCE/WHBAR pair `0xfE7CC3cEb7b1128bfC3889184E2d5561BF74bfb3` · `getAmountsOut(1 WHBAR)` → `55098698` SAUCE base units |
+| Live `payInvoiceWithSwap` | associate `0.0.9586920-1789748210-854425227` · HBAR→SAUCE via router `0.0.7314364-1789748218-167895791` · pay `0.0.7314364-1789748240-167185116` · invoice **SETTLED**, payer `0xE1B590…` (we never approved the WHBAR contract; router wrapped internally) |
 | HashScan contract | https://hashscan.io/testnet/contract/0.0.10600857 |
 
 Earlier HBAR checkout evidence (14.09.2026, previous registry `0xc978548F1c4606CE7A2d15D8ED31Fe88820Df670`):
@@ -171,11 +172,10 @@ Earlier HBAR checkout evidence (14.09.2026, previous registry `0xc978548F1c4606C
 ### Known limitations (honest list)
 
 - **EVM wallets cannot attach a Hedera memo**, so a MetaMask-style HBAR transfer will never reconcile — that is why the HTS path exists. The checkout page states this.
-- **A live `payInvoiceWithSwap` of a real pool** is not on HashScan yet. Reason: SaucerSwap forbids wrapping WHBAR except through WhbarHelper; we will not grant a WHBAR allowance. The router **is** configured, and `quoteSaucer.ts` reads the live SAUCE/WHBAR pool (brief allows a read-only quote when a testnet path is thin/unsafe).
 - **Multiple merchants per deployment** is not in this template.
 
 - [x] `InvoiceRegistry` with atomic HTS settlement + attested HBAR settlement (payer recorded, not the operator)
-- [x] SaucerSwap V1 any-token settlement (`payInvoiceWithSwap`)
+- [x] SaucerSwap V1 any-token settlement (`payInvoiceWithSwap`) — unit tests **and** live testnet SETTLED `0.0.7314364-1789748240-167185116`
 - [x] Ledger domain rules (units, memo, state machine, webhook signing) with unit tests
 - [x] HCS receipt writer (submit + sequence capture) — exercised on testnet topic `0.0.10541151`
 - [x] Next.js dashboard + hosted checkout (one-click HTS + SaucerSwap paths)

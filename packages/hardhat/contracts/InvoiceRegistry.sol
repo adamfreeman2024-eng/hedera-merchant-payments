@@ -253,16 +253,17 @@ contract InvoiceRegistry is Ownable {
      * makes the settlement auditable on-chain. The invoice amount is never trusted
      * from the caller — it is read from storage.
      */
-    function attestHbarSettlement(bytes32 id, bytes32 hederaTxRef) external onlyOperator {
+    function attestHbarSettlement(bytes32 id, bytes32 hederaTxRef, address payer) external onlyOperator {
         Invoice storage inv = _invoices[id];
         if (inv.status != Status.Open) revert InvoiceNotOpen();
         if (inv.token != address(0)) revert InvalidInvoice();
+        if (payer == address(0)) revert InvalidInvoice();
 
         inv.status = Status.Settled;
-        inv.payer = msg.sender;
+        inv.payer = payer;
         inv.settlementRef = hederaTxRef;
 
-        emit InvoiceSettled(id, msg.sender, address(0), inv.amount, hederaTxRef, false);
+        emit InvoiceSettled(id, payer, address(0), inv.amount, hederaTxRef, false);
     }
 
     function cancelInvoice(bytes32 id) external {

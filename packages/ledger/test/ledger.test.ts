@@ -5,6 +5,7 @@ import {
   buildMemo,
   fromBaseUnits,
   parseMemo,
+  hederaEntityToEvm,
   settlementMatches,
   toBaseUnits,
   toTinybar,
@@ -53,6 +54,11 @@ describe("money", () => {
     assert.equal(settlementMatches(100n, 99n, 1n), true);
     assert.equal(settlementMatches(100n, 90n, 1n), false);
     assert.equal(settlementMatches(0n, 0n), false);
+  });
+
+  it("maps Hedera entity ids to the long-zero EVM alias", () => {
+    assert.equal(hederaEntityToEvm("0.0.19264"), "0x0000000000000000000000000000000000004b40");
+    assert.throws(() => hederaEntityToEvm("19264"), /Not a Hedera entity id/);
   });
 });
 

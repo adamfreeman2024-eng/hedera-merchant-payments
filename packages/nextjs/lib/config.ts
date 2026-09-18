@@ -18,6 +18,7 @@ export const config = {
   merchantAccountId: env("MERCHANT_ACCOUNT_ID", env("NEXT_PUBLIC_MERCHANT_ACCOUNT_ID")),
   paymentTokenId: env("PAYMENT_TOKEN_ID", env("NEXT_PUBLIC_PAYMENT_TOKEN_ID")),
   registryAddress: env("INVOICE_REGISTRY_ADDRESS", env("NEXT_PUBLIC_INVOICE_REGISTRY_ADDRESS")),
+  saucerRouter: env("SAUCERSWAP_ROUTER", env("NEXT_PUBLIC_SAUCERSWAP_ROUTER")),
   hcsTopicId: env("HCS_RECEIPT_TOPIC_ID"),
   webhookUrl: env("MERCHANT_WEBHOOK_URL"),
 
@@ -52,6 +53,7 @@ export const publicConfig = {
   merchantAccountId: config.merchantAccountId,
   paymentTokenId: config.paymentTokenId,
   registryAddress: config.registryAddress,
+  saucerRouter: config.saucerRouter,
   walletConnectProjectId: config.walletConnectProjectId,
   hcsTopicId: config.hcsTopicId,
 };

@@ -13,6 +13,7 @@ import {
   createInvoiceRecord,
   deliverWithRetry,
   hederaClient,
+  hederaEntityToEvm,
   invoiceChainId,
   InvoiceStatus,
   signPayload,
@@ -31,7 +32,7 @@ import {
 
 const REGISTRY_ABI = [
   "function createInvoice(bytes32 id, address merchant, address token, uint256 amount, uint64 expiresAt, string memo) external",
-  "function attestHbarSettlement(bytes32 id, bytes32 hederaTxRef) external",
+  "function attestHbarSettlement(bytes32 id, bytes32 hederaTxRef, address payer) external",
   "function expireInvoice(bytes32 id) external",
   "function getInvoice(bytes32 id) view returns (tuple(bytes32 id, address merchant, address token, uint256 amount, uint64 expiresAt, uint8 status, address payer, bytes32 settlementRef, string memo))",
 ];
@@ -192,16 +193,36 @@ export class Reconciler {
           try {
             const contract = registryContract(this.env);
             if (contract) {
-              const onChain = await contract.attestHbarSettlement(
-                chainIdOf(invoice.id),
-                keccak256(toUtf8Bytes(tx.transaction_id))
-              );
-              await onChain.wait();
-              await this.prisma.invoice.update({
-                where: { id: invoice.id },
-                data: { onChainTxHash: onChain.hash },
-              });
-              summary.onChainAttested.push(invoice.id);
+              let payerEvm: string | null = null;
+              if (payer && /^0\.0\.\d+$/.test(payer)) {
+                try {
+                  payerEvm = await this.mirror.evmAddressOf(payer);
+                } catch {
+                  payerEvm = null;
+                }
+                if (!payerEvm) {
+                  try {
+                    payerEvm = hederaEntityToEvm(payer);
+                  } catch {
+                    payerEvm = null;
+                  }
+                }
+              }
+              if (!payerEvm) {
+                summary.errors.push(`attest ${invoice.id}: could not resolve payer EVM address`);
+              } else {
+                const onChain = await contract.attestHbarSettlement(
+                  chainIdOf(invoice.id),
+                  keccak256(toUtf8Bytes(tx.transaction_id)),
+                  payerEvm
+                );
+                await onChain.wait();
+                await this.prisma.invoice.update({
+                  where: { id: invoice.id },
+                  data: { onChainTxHash: onChain.hash },
+                });
+                summary.onChainAttested.push(invoice.id);
+              }
             }
           } catch (error) {
             summary.errors.push(`attest ${invoice.id}: ${(error as Error).message}`);

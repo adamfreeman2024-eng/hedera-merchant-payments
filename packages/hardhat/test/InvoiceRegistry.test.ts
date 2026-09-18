@@ -91,26 +91,27 @@ describe("InvoiceRegistry", () => {
     const { id } = await openInvoice(registry, operator, merchant, HBAR, 1000n, "hbar-1");
     const txRef = ethers.keccak256(ethers.toUtf8Bytes("0.0.1234@1789313329.528782333"));
 
-    await expect(registry.connect(operator).attestHbarSettlement(id, txRef))
+    await expect(registry.connect(operator).attestHbarSettlement(id, txRef, payer.address))
       .to.emit(registry, "InvoiceSettled")
-      .withArgs(id, operator.address, HBAR, 1000n, txRef, false);
+      .withArgs(id, payer.address, HBAR, 1000n, txRef, false);
 
     const inv = await registry.getInvoice(id);
     expect(inv.status).to.equal(2n); // Settled
+    expect(inv.payer).to.equal(payer.address);
     expect(inv.settlementRef).to.equal(txRef);
     expect(await registry.isOpen(id)).to.equal(false);
 
     await expect(
-      registry.connect(operator).attestHbarSettlement(id, txRef)
+      registry.connect(operator).attestHbarSettlement(id, txRef, payer.address)
     ).to.be.revertedWithCustomError(registry, "InvoiceNotOpen");
   });
 
   it("refuses to attest an HBAR settlement for a token invoice", async () => {
-    const { registry, operator, merchant } = await deploy();
+    const { registry, operator, merchant, payer } = await deploy();
     const token = "0x00000000000000000000000000000000000004a2";
     const { id } = await openInvoice(registry, operator, merchant, token, 5n, "hts-1");
     await expect(
-      registry.connect(operator).attestHbarSettlement(id, ethers.ZeroHash)
+      registry.connect(operator).attestHbarSettlement(id, ethers.ZeroHash, payer.address)
     ).to.be.revertedWithCustomError(registry, "InvalidInvoice");
   });
 

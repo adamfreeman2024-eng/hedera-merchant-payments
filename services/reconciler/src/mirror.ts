@@ -81,18 +81,26 @@ export class MirrorNodeClient {
    */
   async transactionsForAccount(
     accountId: string,
-    opts: { since?: number; limit?: number } = {}
+    opts: { since?: number; limit?: number; maxPages?: number } = {}
   ): Promise<MirrorTransaction[]> {
     const limit = opts.limit ?? 100;
+    const maxPages = opts.maxPages ?? 10;
     const params = new URLSearchParams({ "account.id": accountId, limit: String(limit), order: "asc" });
     if (opts.since) params.set("timestamp", `gte:${(opts.since / 1000).toFixed(9)}`);
-    const url = `${this.base}/api/v1/transactions?${params.toString()}`;
+    let url: string | null = `${this.base}/api/v1/transactions?${params.toString()}`;
+    const out: MirrorTransaction[] = [];
 
-    const res = await this.fetchImpl(url, { signal: AbortSignal.timeout(20_000) });
-    if (res.status === 404) return []; // empty result set
-    if (!res.ok) throw new Error(`Mirror Node ${res.status} for ${url}`);
-    const page = (await res.json()) as MirrorPage;
-    return page.transactions ?? [];
+    for (let pageNum = 0; pageNum < maxPages && url; pageNum++) {
+      const res = await this.fetchImpl(url, { signal: AbortSignal.timeout(20_000) });
+      if (res.status === 404) break;
+      if (!res.ok) throw new Error(`Mirror Node ${res.status} for ${url}`);
+      const page = (await res.json()) as MirrorPage;
+      out.push(...(page.transactions ?? []));
+      const next = page.links?.next;
+      if (!next) break;
+      url = next.startsWith("http") ? next : `${this.base}${next.startsWith("/") ? next : `/${next}`}`;
+    }
+    return out;
   }
 
   /** Accounts that sent value to our merchant in a single transaction. */

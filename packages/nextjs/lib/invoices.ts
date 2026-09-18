@@ -1,4 +1,4 @@
-import { fromBaseUnits, InvoiceStatus } from "@hmp/ledger";
+import { fromBaseUnits, invoiceChainId, InvoiceStatus } from "@hmp/ledger";
 import { config, explorerTransaction, hasDatabase, hasHcsTopic } from "./config";
 import { withDb } from "./db";
 import { createInvoiceInDb } from "@hmp/ledger";
@@ -23,6 +23,7 @@ export type InvoiceView = {
   hcsSequence: number | null;
   onChainTxHash: string | null;
   checkoutPath: string;
+  chainId: string;
 };
 
 const decimalsFor = (token: string, tokenDecimals?: number | null) =>
@@ -68,6 +69,7 @@ export function toView(row: Row): InvoiceView {
     hcsSequence: row.hcsSequence,
     onChainTxHash: row.onChainTxHash,
     checkoutPath: `/pay/${row.id}`,
+    chainId: invoiceChainId(row.id),
   };
 }
 

@@ -143,9 +143,14 @@ export default async function CheckoutPage({ params }: Props) {
           </div>
           <PayPanel
             hasInjectedWalletHint={false}
-            tokenConfigured={Boolean(publicConfig.paymentTokenId)}
+            tokenConfigured={Boolean(publicConfig.paymentTokenId) && invoice.token !== "HBAR"}
             registryConfigured={Boolean(publicConfig.registryAddress)}
             network={publicConfig.network}
+            registryAddress={publicConfig.registryAddress}
+            invoiceChainId={invoice.chainId}
+            amount={invoice.amount}
+            tokenHederaId={invoice.token}
+            saucerRouter={publicConfig.saucerRouter}
           />
         </div>
       ) : null}

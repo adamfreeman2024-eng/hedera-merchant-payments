@@ -138,8 +138,8 @@ Verified locally (commands and results, not claims):
 | Milestone | Command | Result |
 |---|---|---|
 | Contract compiles | `yarn hardhat:compile` | ✅ 3 files, solc 0.8.28, evm target `paris` |
-| Contract behaviour | `yarn hardhat:test` | ✅ **11 passing** (lifecycle, access control, HTS-path guards, expiry, key rotation) |
-| Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **10 passing** (units, memo, state machine, webhook signatures) |
+| Contract behaviour | `yarn hardhat:test` | ✅ **14 passing** (lifecycle, HTS/SaucerSwap paths, attest records the real payer, expiry, key rotation) |
+| Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **11 passing** (units, memo, state machine, webhook signatures, entity→EVM) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ scaffolds, manifest validates, outro + `{run:scripts}` render |
 | Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, 8-assertion acceptance contract) | ✅ all valid JSON/YAML; contract: 2 critical / 5 major / 1 minor |
 | App build | `yarn next:build` | ✅ Next.js 15, 7 routes compiled |
@@ -160,17 +160,18 @@ Verified locally (commands and results, not claims):
 
 ### Known limitations (honest list)
 
-- **HBAR path: the on-chain `payer` is the attesting operator.** The true payer *is* recorded in the ledger row (`paidBy`) and inside the HCS receipt (`paymentTxId`); the HTS path records the real payer because the token transfer carries it. Passing the payer into `attestHbarSettlement` is the planned fix.
 - **EVM wallets cannot attach a Hedera memo**, so a MetaMask-style HBAR transfer will never reconcile — that is why the HTS path exists. The checkout page states this.
-- **No one-click wallet pay yet.** The checkout shows amount, destination, memo, a QR of the checkout link, and both payment paths; the in-browser HTS `approve` + `payInvoiceWithHts` call is the next milestone.
-- **Mirror Node pagination**: the worker scans the first 100 transactions in the lookback window per pass; `links.next` paging is on the roadmap.
+- **Live SaucerSwap pair on testnet** is not yet recorded as a HashScan link. The swap path is unit-tested against a mock router; a forked-mainnet / thin-testnet quote is allowed by the brief if a pair has no pool.
+- **HIP-1215 scheduled `expireInvoice`** is still planned (callable by anyone after the deadline today).
+- **Multiple merchants per deployment** is not in this template.
 
-- [x] `InvoiceRegistry` with atomic HTS settlement + attested HBAR settlement
+- [x] `InvoiceRegistry` with atomic HTS settlement + attested HBAR settlement (payer recorded, not the operator)
+- [x] SaucerSwap V1 any-token settlement (`payInvoiceWithSwap`)
 - [x] Ledger domain rules (units, memo, state machine, webhook signing) with unit tests
-- [x] HCS receipt writer (submit + sequence capture) — *not yet exercised against a live topic*
-- [ ] Next.js dashboard + hosted checkout
-- [ ] Mirror Node reconciler worker + webhook delivery queue
-- [ ] Testnet end-to-end walkthrough with recorded transaction ids
+- [x] HCS receipt writer (submit + sequence capture) — exercised on testnet topic `0.0.10541151`
+- [x] Next.js dashboard + hosted checkout (one-click HTS + SaucerSwap paths)
+- [x] Mirror Node reconciler worker + webhook delivery queue (`links.next` pagination)
+- [x] Testnet end-to-end walkthrough with recorded transaction ids (HBAR path)
 - [ ] Merchant onboarding (multiple merchants per deployment)
 
 Licence: MIT.

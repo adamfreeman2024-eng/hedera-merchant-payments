@@ -68,3 +68,10 @@ export function settlementMatches(expected: bigint, received: bigint, tolerance 
   const diff = received > expected ? received - expected : expected - received;
   return diff <= tolerance;
 }
+
+/** Hedera `0.0.N` → 20-byte EVM address (the long-zero alias). */
+export function hederaEntityToEvm(id: string): `0x${string}` {
+  const match = /^0\.0\.(\d+)$/.exec(id.trim());
+  if (!match) throw new AmountError(`Not a Hedera entity id: ${id}`);
+  return `0x${BigInt(match[1]).toString(16).padStart(40, "0")}`;
+}

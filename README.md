@@ -141,6 +141,7 @@ Verified locally (commands and results, not claims):
 | Contract behaviour | `yarn hardhat:test` | ✅ **16 passing** (lifecycle, HTS/SaucerSwap, HIP-1215 scheduleExpire, attest records the real payer) |
 | Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **11 passing** (units, memo, state machine, webhook signatures, entity→EVM) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ 18.09.2026: scaffolds, outro renders, `.env.example` includes `SAUCERSWAP_ROUTER` |
+| Fresh clone `yarn verify` | `git clone . /tmp/fresh && node .yarn/releases/yarn-3.2.3.cjs install && yarn verify` | ✅ 18.09.2026: install 1m43s, **exit 0** — tsc + **16** hardhat + **11** ledger (no `.env`) |
 | Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, 8-assertion acceptance contract) | ✅ all valid JSON/YAML; contract: 2 critical / 5 major / 1 minor |
 | App build | `yarn next:build` | ✅ Next.js 15, 7 routes compiled |
 | App read path with **no configuration at all** | `next start` with every env var unset | ✅ dashboard renders with setup guidance, `/new` 200, `/api/health` lists what is missing, `POST /api/invoices` → clean 503 (no crash) |

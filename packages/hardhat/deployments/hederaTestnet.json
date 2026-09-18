@@ -1,9 +1,12 @@
 {
   "network": "hederaTestnet",
   "chainId": 296,
-  "address": "0xc978548F1c4606CE7A2d15D8ED31Fe88820Df670",
-  "owner": "0x5be3EbB716530be726A117044113001fB728595E",
-  "operator": "0x5be3EbB716530be726A117044113001fB728595E",
-  "deployedAt": "2026-09-14T16:13:48.755Z",
-  "deployTxHash": "0x4617e19ef194bd2bf6c3150d2a137c8d0d089f23a36f5843c4d872cc64300f53"
+  "address": "0x7385E85823393A6e498e9cdb158C8300F9018F4b",
+  "owner": "0xE1B590d179a8dA38eAE3219aEd8b05fFa33741a1",
+  "operator": "0xE1B590d179a8dA38eAE3219aEd8b05fFa33741a1",
+  "deployedAt": "2026-09-18T10:33:26.192Z",
+  "deployTxHash": "0x3adc2d0a2caf663e4aa9ca44c390f2bc1145f39867947c371612209a879d83ab",
+  "hederaContractId": "0.0.10600857",
+  "scheduleExpireTx": "0.0.7314364-1789727671-967513663",
+  "createInvoiceTx": "0.0.7314364-1789727663-791961116"
 }

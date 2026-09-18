@@ -149,20 +149,28 @@ Verified locally (commands and results, not claims):
 
 ### Testnet evidence (publicly verifiable, no keys needed)
 
+Current ABI (18.09.2026) — operator `0.0.9586920` / `0xE1B590d179a8dA38eAE3219aEd8b05fFa33741a1`:
+
 | Artifact | Value |
 |---|---|
-| InvoiceRegistry | `0xc978548F1c4606CE7A2d15D8ED31Fe88820Df670` |
+| InvoiceRegistry | `0x7385E85823393A6e498e9cdb158C8300F9018F4b` · Hedera `0.0.10600857` |
+| Deploy tx | `0.0.7314364-1789727595-506480301` (`0x3adc2d0a…`) |
+| SaucerSwap V1 router | `0.0.19264` (`0x…4b40`) set on the registry in the same session |
+| HIP-1215 `scheduleExpire` | create `0.0.7314364-1789727663-791961116` · schedule `0.0.7314364-1789727671-967513663` · schedule entity `0x…A1c1a6` |
+| HashScan contract | https://hashscan.io/testnet/contract/0.0.10600857 |
+
+Earlier HBAR checkout evidence (14.09.2026, previous registry `0xc978548F1c4606CE7A2d15D8ED31Fe88820Df670`):
+
+| Artifact | Value |
+|---|---|
 | HCS receipt topic | `0.0.10541151` (seq 1, seq 2) |
 | Invoice 1 | `INV-MU1G1FSW443` — 0.5 HBAR, paid by `0.0.10541152`, tx `0.0.10541152-1789402480-818444585` |
-| Invoice 2 | `INV-MU1GDH4M599` — 0.25 HBAR, paid by `0.0.10541152`, tx `0.0.10541152-1789403045-808216195`, attested on-chain |
-| Matching | memo (`HMP-…`) + amount + destination, read from the Mirror Node |
-| Registry read-back | `getInvoice(chainId)` → `SETTLED`, amount `25000000` tinybar, correct memo |
+| Invoice 2 | `INV-MU1GDH4M599` — 0.25 HBAR, paid by `0.0.10541152`, tx `0.0.10541152-1789403045-808216195` |
 
 ### Known limitations (honest list)
 
 - **EVM wallets cannot attach a Hedera memo**, so a MetaMask-style HBAR transfer will never reconcile — that is why the HTS path exists. The checkout page states this.
-- **Live SaucerSwap pair on testnet** is not yet recorded as a HashScan link. The swap path is unit-tested against a mock router; a forked-mainnet / thin-testnet quote is allowed by the brief if a pair has no pool.
-- **Testnet redeploy of the new ABI** is blocked until `HEDERA_OPERATOR_KEY` is set in `.env` (id `0.0.10068225` is funded; the key field is empty). The live registry `0xc978…` still has the previous ABI.
+- **Live SaucerSwap swap of a real pool** is not yet a HashScan payment (router is configured on the new registry; a thin testnet pool may need a forked-mainnet quote as the brief allows).
 - **Multiple merchants per deployment** is not in this template.
 
 - [x] `InvoiceRegistry` with atomic HTS settlement + attested HBAR settlement (payer recorded, not the operator)
@@ -172,7 +180,7 @@ Verified locally (commands and results, not claims):
 - [x] Next.js dashboard + hosted checkout (one-click HTS + SaucerSwap paths)
 - [x] Mirror Node reconciler worker + webhook delivery queue (`links.next` pagination)
 - [x] Testnet end-to-end walkthrough with recorded transaction ids (HBAR path)
-- [x] HIP-1215 `scheduleExpire` via HSS `0x16b` (unit-tested with a mock at that address)
+- [x] HIP-1215 `scheduleExpire` via HSS `0x16b` — mock unit tests **and** live testnet tx `0.0.7314364-1789727671-967513663`
 - [ ] Merchant onboarding (multiple merchants per deployment)
 
 Licence: MIT.

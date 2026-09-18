@@ -229,4 +229,34 @@ describe("InvoiceRegistry", () => {
       ).to.be.revertedWithCustomError(registry, "BadSwapPath");
     });
   });
+
+  describe("HIP-1215 scheduled expire", () => {
+    const HSS = "0x000000000000000000000000000000000000016b";
+
+    async function plantHss() {
+      const mock = await (await ethers.getContractFactory("MockHSS")).deploy();
+      await mock.waitForDeployment();
+      const code = await ethers.provider.getCode(await mock.getAddress());
+      await ethers.provider.send("hardhat_setCode", [HSS, code]);
+    }
+
+    it("schedules expireInvoice at the invoice deadline via 0x16b", async () => {
+      await plantHss();
+      const { registry, operator, merchant, stranger } = await deploy();
+      const { id, expiresAt } = await openInvoice(registry, operator, merchant, HBAR, 1n, "hss-1", 3600);
+      await expect(registry.connect(stranger).scheduleExpire(id))
+        .to.emit(registry, "ExpireScheduled");
+      const sched = await registry.expireSchedule(id);
+      expect(sched).to.not.equal(ethers.ZeroAddress);
+      expect(expiresAt).to.be.greaterThan(await time.latest());
+    });
+
+    it("refuses to schedule expiry of a cancelled invoice", async () => {
+      await plantHss();
+      const { registry, operator, merchant } = await deploy();
+      const { id } = await openInvoice(registry, operator, merchant, HBAR, 1n, "hss-2");
+      await registry.connect(operator).cancelInvoice(id);
+      await expect(registry.scheduleExpire(id)).to.be.revertedWithCustomError(registry, "InvoiceNotOpen");
+    });
+  });
 });

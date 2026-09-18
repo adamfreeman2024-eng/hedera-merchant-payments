@@ -57,3 +57,20 @@ contract MockSaucerRouter {
         amounts[path.length - 1] = amountOutMin;
     }
 }
+
+/// @dev HIP-1215 scheduleCall mock. Returns SUCCESS (22) and a deterministic address.
+contract MockHSS {
+    event Scheduled(address to, uint256 expirySecond, bytes callData);
+
+    function scheduleCall(
+        address to,
+        uint256 expirySecond,
+        uint256,
+        uint64,
+        bytes calldata callData
+    ) external returns (int64 responseCode, address scheduleAddress) {
+        scheduleAddress = address(uint160(uint256(keccak256(abi.encode(to, expirySecond, callData)))));
+        emit Scheduled(to, expirySecond, callData);
+        return (22, scheduleAddress);
+    }
+}

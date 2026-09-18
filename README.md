@@ -66,7 +66,7 @@ customer wallet ──HBAR transfer (memo HMP-INV…)─────────
 | **Consensus Service (HCS)** | settlement/expiry/cancel receipts (`TopicMessageSubmitTransaction`) |
 | **Smart Contracts** | `InvoiceRegistry` invoice ledger (OpenZeppelin `Ownable` for key rotation) |
 | **Mirror Node REST** | reconciliation of native HBAR transfers by memo, amount and destination |
-| **Scheduled Transactions (HSS, `0x16b`)** | planned: schedule `expireInvoice()` at the deadline (HIP-1215 `scheduleCall`) so expiry needs no worker |
+| **Scheduled Transactions (HSS, `0x16b`)** | HIP-1215 `scheduleCall`: `scheduleExpire(id)` queues `expireInvoice` at the deadline so expiry needs no worker. HSS does not revert — we check response code 22. |
 
 ## Architecture
 
@@ -138,7 +138,7 @@ Verified locally (commands and results, not claims):
 | Milestone | Command | Result |
 |---|---|---|
 | Contract compiles | `yarn hardhat:compile` | ✅ 3 files, solc 0.8.28, evm target `paris` |
-| Contract behaviour | `yarn hardhat:test` | ✅ **14 passing** (lifecycle, HTS/SaucerSwap paths, attest records the real payer, expiry, key rotation) |
+| Contract behaviour | `yarn hardhat:test` | ✅ **16 passing** (lifecycle, HTS/SaucerSwap, HIP-1215 scheduleExpire, attest records the real payer) |
 | Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **11 passing** (units, memo, state machine, webhook signatures, entity→EVM) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ scaffolds, manifest validates, outro + `{run:scripts}` render |
 | Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, 8-assertion acceptance contract) | ✅ all valid JSON/YAML; contract: 2 critical / 5 major / 1 minor |
@@ -162,7 +162,7 @@ Verified locally (commands and results, not claims):
 
 - **EVM wallets cannot attach a Hedera memo**, so a MetaMask-style HBAR transfer will never reconcile — that is why the HTS path exists. The checkout page states this.
 - **Live SaucerSwap pair on testnet** is not yet recorded as a HashScan link. The swap path is unit-tested against a mock router; a forked-mainnet / thin-testnet quote is allowed by the brief if a pair has no pool.
-- **HIP-1215 scheduled `expireInvoice`** is still planned (callable by anyone after the deadline today).
+- **Testnet redeploy of the new ABI** is blocked until `HEDERA_OPERATOR_KEY` is set in `.env` (id `0.0.10068225` is funded; the key field is empty). The live registry `0xc978…` still has the previous ABI.
 - **Multiple merchants per deployment** is not in this template.
 
 - [x] `InvoiceRegistry` with atomic HTS settlement + attested HBAR settlement (payer recorded, not the operator)
@@ -172,6 +172,7 @@ Verified locally (commands and results, not claims):
 - [x] Next.js dashboard + hosted checkout (one-click HTS + SaucerSwap paths)
 - [x] Mirror Node reconciler worker + webhook delivery queue (`links.next` pagination)
 - [x] Testnet end-to-end walkthrough with recorded transaction ids (HBAR path)
+- [x] HIP-1215 `scheduleExpire` via HSS `0x16b` (unit-tested with a mock at that address)
 - [ ] Merchant onboarding (multiple merchants per deployment)
 
 Licence: MIT.

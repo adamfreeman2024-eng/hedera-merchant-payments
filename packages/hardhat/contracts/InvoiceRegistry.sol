@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ISaucerRouterV1, IERC20Minimal} from "./ISaucerRouter.sol";
+import {IHederaScheduleService} from "./IHederaSchedule.sol";
 
 /**
  * Minimal view of the Hedera Token Service (HTS) system contract at 0x167.
@@ -44,8 +45,10 @@ interface IHederaTokenService {
 contract InvoiceRegistry is Ownable {
     /// @dev HTS system contract (precompile) address.
     IHederaTokenService private constant HTS = IHederaTokenService(address(0x167));
+    IHederaScheduleService private constant HSS = IHederaScheduleService(address(0x16b));
     /// @dev Hedera response code for SUCCESS.
     int64 private constant SUCCESS = 22;
+    uint256 private constant EXPIRE_GAS = 100_000;
 
     enum Status {
         None,
@@ -70,6 +73,7 @@ contract InvoiceRegistry is Ownable {
     address public operator;
     /// @dev SaucerSwap V1 router. address(0) disables the any-token swap path.
     address public saucerRouter;
+    mapping(bytes32 => address) public expireSchedule;
 
     mapping(bytes32 => Invoice) private _invoices;
     bytes32[] private _invoiceIds;
@@ -93,6 +97,7 @@ contract InvoiceRegistry is Ownable {
     );
     event InvoiceCancelled(bytes32 indexed id, address by);
     event InvoiceExpired(bytes32 indexed id);
+    event ExpireScheduled(bytes32 indexed id, address schedule);
 
     error NotOperator();
     error InvalidInvoice();
@@ -103,6 +108,7 @@ contract InvoiceRegistry is Ownable {
     error ZeroAmount();
     error RouterNotSet();
     error BadSwapPath();
+    error ScheduleFailed(int256 responseCode);
 
     modifier onlyOperator() {
         if (msg.sender != operator && msg.sender != owner()) revert NotOperator();
@@ -274,6 +280,28 @@ contract InvoiceRegistry is Ownable {
         }
         inv.status = Status.Cancelled;
         emit InvoiceCancelled(id, msg.sender);
+    }
+
+    /**
+     * @notice HIP-1215: schedule `expireInvoice(id)` at the invoice deadline so
+     * expiry does not depend on a worker. Anyone may call this while the invoice
+     * is OPEN. HSS does not revert — we check the response code (22 = SUCCESS).
+     */
+    function scheduleExpire(bytes32 id) external returns (address schedule) {
+        Invoice storage inv = _invoices[id];
+        if (inv.status != Status.Open) revert InvoiceNotOpen();
+        bytes memory callData = abi.encodeWithSelector(this.expireInvoice.selector, id);
+        (int64 rc, address sched) = HSS.scheduleCall(
+            address(this),
+            uint256(inv.expiresAt),
+            EXPIRE_GAS,
+            0,
+            callData
+        );
+        if (rc != SUCCESS) revert ScheduleFailed(rc);
+        expireSchedule[id] = sched;
+        emit ExpireScheduled(id, sched);
+        return sched;
     }
 
     /// @notice Flips an unpaid invoice past its expiry. Callable by anyone (also schedulable).

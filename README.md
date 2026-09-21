@@ -5,7 +5,7 @@ the customer pays it on-chain, and the gateway verifies, receipts and reports th
 payment. No middleman ever holds the money.
 
 ```bash
-npm create scaffold-hbar@latest merchant-payments -- --template adamfreeman2024-eng/hedera-merchant-payments
+npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
 ```
 
 ---
@@ -86,7 +86,7 @@ Everything money-related lives in `packages/ledger` as pure, unit-tested functio
 
 ```bash
 # 1. scaffold
-npm create scaffold-hbar@latest merchant-payments -- --template adamfreeman2024-eng/hedera-merchant-payments
+npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
 cd merchant-payments
 
 # 2. env + ledger

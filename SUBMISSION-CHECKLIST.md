@@ -26,7 +26,7 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 - [ ] **Paste the one-click install command** from the brief into this file once the
       repo is public, then verify it end-to-end:
       ```bash
-      npm create scaffold-hbar@latest -- --template adamfreeman2024-eng/hedera-merchant-payments
+      npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
       ```
 
 ## Gate items and their evidence

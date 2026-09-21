@@ -5,7 +5,7 @@ the customer pays it on-chain, and the gateway verifies, receipts and reports th
 payment. No middleman ever holds the money.
 
 ```bash
-npm create scaffold-hbar@latest merchant-payments -- --template <owner>/hedera-merchant-payments
+npm create scaffold-hbar@latest merchant-payments -- --template adamfreeman2024-eng/hedera-merchant-payments
 ```
 
 ---
@@ -54,8 +54,9 @@ customer wallet ──HBAR transfer (memo HMP-INV…)─────────
   (recording the transaction id it saw on the Mirror Node). It cannot redirect funds and
   cannot settle a token invoice — that path is atomic and only ever pays the merchant
   encoded in the invoice.
-- Payer identity for HBAR settlements is the operator (the attester); the real payer account id
-  is stored in the ledger from the Mirror Node record.
+- HBAR `attestHbarSettlement(id, txRef, payer)` records the **real payer** (third argument),
+  never `msg.sender`. Token and SaucerSwap paths set `inv.payer = msg.sender` in the same
+  transaction.
 
 ## Hedera services used
 
@@ -85,7 +86,7 @@ Everything money-related lives in `packages/ledger` as pure, unit-tested functio
 
 ```bash
 # 1. scaffold
-npm create scaffold-hbar@latest merchant-payments -- --template <owner>/hedera-merchant-payments
+npm create scaffold-hbar@latest merchant-payments -- --template adamfreeman2024-eng/hedera-merchant-payments
 cd merchant-payments
 
 # 2. env + ledger
@@ -159,8 +160,10 @@ Current ABI (18.09.2026) — operator `0.0.9586920` / `0xE1B590d179a8dA38eAE3219
 | SaucerSwap V1 router | `0.0.19264` (`0x…4b40`) set on the registry in the same session |
 | HIP-1215 `scheduleExpire` | create `0.0.7314364-1789727663-791961116` · schedule `0.0.7314364-1789727671-967513663` · schedule entity `0x…A1c1a6` |
 | SaucerSwap V1 live quote | factory `0.0.9959` (592 pairs) · SAUCE/WHBAR pair `0xfE7CC3cEb7b1128bfC3889184E2d5561BF74bfb3` · `getAmountsOut(1 WHBAR)` → `55098698` SAUCE base units |
-| Live `payInvoiceWithSwap` | associate `0.0.9586920-1789748210-854425227` · HBAR→SAUCE via router `0.0.7314364-1789748218-167895791` · pay `0.0.7314364-1789748240-167185116` · invoice **SETTLED**, payer `0xE1B590…` (we never approved the WHBAR contract; router wrapped internally) |
+| Live `payInvoiceWithSwap` | associate `0.0.9586920-1789748210-854425227` · HBAR→SAUCE via router `0.0.7314364-1789748218-167895791` (demo acquired SAUCE with `swapExactETHForTokens`, never approved WHBAR) · pay `0.0.7314364-1789748240-167185116` · invoice **SETTLED**, payer `0xE1B590…` |
 | HashScan contract | https://hashscan.io/testnet/contract/0.0.10600857 |
+| HashScan live swap (SETTLED) | https://hashscan.io/testnet/transaction/0.0.7314364-1789748240-167185116 |
+| Mirror Node (JSON, curl-friendly) | https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.7314364-1789748240-167185116 |
 
 Earlier HBAR checkout evidence (14.09.2026, previous registry `0xc978548F1c4606CE7A2d15D8ED31Fe88820Df670`):
 
@@ -189,9 +192,9 @@ Licence: MIT.
 
 ## Submission checklist
 
-- [ ] Repo is public (or shared with the reviewers) — *not before 2026-09-21*.
+- [x] Repo is public (21.09.2026): https://github.com/adamfreeman2024-eng/hedera-merchant-payments
 - [ ] `.github/workflows/ci.yaml` is committed. It is ignored right now because the
       GitHub token in use has no `workflow` scope; run `gh auth refresh -s workflow`
       and then `git add -f .github/workflows/ci.yaml && git commit -m "ci: add workflow"`.
-- [ ] README status table matches the latest local runs.
-- [ ] No secrets in the tree: `git grep -nE "0x[0-9a-fA-F]{64}|302e0201"`.
+- [x] README status table matches the latest local runs (21.09.2026).
+- [x] No secrets in the tree besides Hardhat account #0 (named `HARDHAT_DEV_KEY`).

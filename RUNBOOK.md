@@ -25,7 +25,7 @@ account is required for the operator).
 ## 1. Scaffold and install
 
 ```bash
-npm create scaffold-hbar@latest merchant-payments -- --template <owner>/hedera-merchant-payments
+npm create scaffold-hbar@latest merchant-payments -- --template adamfreeman2024-eng/hedera-merchant-payments
 cd merchant-payments
 yarn install        # or: npm install      (~2 min)
 yarn verify         # typecheck + contract tests + ledger tests — green out of the box

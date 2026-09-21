@@ -1,6 +1,6 @@
 {
   "name": "hedera-merchant-payments",
-  "description": "Non-custodial merchant payment gateway on Hedera: on-chain invoices (InvoiceRegistry), HTS token + HBAR checkout, Mirror Node reconciliation worker, HCS settlement receipts, signed webhooks, refunds via Hedera Schedule Service.",
+  "description": "Non-custodial merchant payment gateway on Hedera: on-chain invoices (InvoiceRegistry), HTS token + HBAR checkout, SaucerSwap any-token settlement, Mirror Node reconciliation worker, HCS settlement receipts, signed webhooks, HIP-1215 scheduled expiry.",
   "version": "0.1.0",
   "create-scaffold-hbar": {
     "capabilities": {

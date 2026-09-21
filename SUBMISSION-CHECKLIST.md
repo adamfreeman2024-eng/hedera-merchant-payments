@@ -16,11 +16,9 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
       git commit -m "ci: add workflow"
       git push
       ```
-- [ ] **Flip the repository to public** (21.09.2026 at the earliest — the build
-      window opens that day; the repo was deliberately private until then).
+- [x] **Flip the repository to public** (done 21.09.2026).
       ```bash
-      gh repo edit adamfreeman2024-eng/hedera-merchant-payments \
-        --visibility public --accept-visibility-change-consequences
+      gh repo edit adamfreeman2024-eng/hedera-merchant-payments --visibility public
       ```
 - [ ] **Submit the entry** through the form Hedera sends / links in the brief.
 - [ ] **Run the self-check script** Hedera said would arrive at the start of the
@@ -35,7 +33,7 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 
 | Gate requirement | Status | Evidence |
 |---|---|---|
-| Public GitHub repo | ⛔ pending window | currently PRIVATE by design |
+| Public GitHub repo | ✅ 21.09.2026 | `https://github.com/adamfreeman2024-eng/hedera-merchant-payments` |
 | `template.json` at root | ✅ | validated by `create-scaffold-hbar` local-dir seam |
 | README + `AGENTS.md` | ✅ | both at root |
 | MIT licence | ✅ | `LICENSE` (renamed from `LICENCE` for canonical detection) |

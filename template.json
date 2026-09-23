@@ -23,6 +23,8 @@
       { "key": "MERCHANT_ACCOUNT_ID", "description": "Merchant settlement account — customer payments land here directly (non-custodial)" },
       { "key": "PAYMENT_TOKEN_ID", "description": "HTS token the merchant wants to receive (e.g. testnet USDC); leave empty to accept HBAR only" },
       { "key": "SAUCERSWAP_ROUTER", "description": "SaucerSwap V1 router Hedera id or EVM address (testnet 0.0.19264). Required for any-token checkout; leave empty to disable swaps" },
+      { "key": "SAUCERSWAP_FACTORY", "description": "SaucerSwap V1 factory (testnet default 0.0.9959). Used by the live quote endpoint" },
+      { "key": "SAUCERSWAP_WHBAR", "description": "WHBAR token used as the one-hop quote token (testnet default 0.0.15058). The swap never wraps HBAR itself" },
       { "key": "INVOICE_REGISTRY_ADDRESS", "description": "Deployed InvoiceRegistry address (from `hardhat:deploy`)" },
       { "key": "HCS_RECEIPT_TOPIC_ID", "description": "HCS topic collecting settlement receipts (created by `reconciler:once --init-topic`)" },
       { "key": "DATABASE_URL", "description": "Postgres connection string for the invoice ledger" },

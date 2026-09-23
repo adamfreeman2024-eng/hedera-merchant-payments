@@ -9,7 +9,7 @@ agent, read this file before editing.
 |---|---|
 | `packages/hardhat/contracts/` | `InvoiceRegistry.sol` (invoice ledger, HTS settlement) |
 | `packages/hardhat/test/` | contract tests (hardhat) |
-| `packages/ledger/src/` | **all money logic**: units, memo, invoice state machine, HCS receipts, webhook signing |
+| `packages/ledger/src/` | **all money logic**: units, memo, invoice state machine, HCS receipts, webhook signing, SaucerSwap quote, HCS reconstruct |
 | `packages/ledger/test/` | unit tests for the above (`yarn workspace @hmp/ledger test`) |
 | `packages/nextjs/` | merchant dashboard + hosted checkout (App Router) |
 | `services/reconciler/` | worker: Mirror Node → ledger → HCS → webhooks |
@@ -45,3 +45,8 @@ All four must pass. New money or state logic requires a test in `packages/ledger
   `WebhookDelivery` row, emit an HCS receipt.
 - **Change contract behaviour** → update `InvoiceRegistry.sol`, its tests, and the
   `createInvoiceRecord` / `markSettled` mirror in `packages/ledger/src/invoice.ts`.
+- **Quote / swap path** → `packages/ledger/src/saucerQuote.ts`. Never invent a pool: if
+  `getPair` returns the zero address, the quote is `ok: false` and checkout must not send
+  a transaction. Amounts stay `bigint`. Default slippage is 100 bps, applied in integer math.
+- **Receipt reconstruct** → `packages/ledger/src/reconstruct.ts`. Skip malformed HCS
+  messages; do not guess. `yarn reconstruct --topic 0.0.x` must work with no `.env`.

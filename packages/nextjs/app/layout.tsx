@@ -20,6 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Hedera Merchant Payments
             </Link>
             <div className="flex items-center gap-4 text-sm">
+              <Link href="/receipt" className="text-zinc-400 hover:text-zinc-100">
+                Verify receipt
+              </Link>
               <span className="rounded-md border border-edge px-2 py-1 text-xs text-zinc-400">
                 network: {publicConfig.network}
               </span>

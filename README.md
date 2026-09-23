@@ -31,8 +31,10 @@ That is what this template ships.
 | Pay in HBAR | native `CryptoTransfer` with the invoice memo `HMP-<ID>` |
 | Pay in an HTS token (e.g. testnet USDC) | **atomic on-chain settlement**: `approve` (HIP-336) then the registry calls `HTS.transferFrom(payer → merchant)` inside the same transaction |
 | Pay in **any other HTS token** | **SaucerSwap V1** `swapExactTokensForTokens` in the same transaction (`payInvoiceWithSwap`). Merchant still receives the invoice token. Without the DEX this path does not exist — that is the load-bearing integration. |
+| Live any-token **quote** | `GET /api/quote` asks the SaucerSwap V1 factory for a pair (direct, or one hop through WHBAR), then `getAmountsIn`. Checkout **refuses to send** a swap tx until that quote exists. No pool → honest error, not a revert after the user signed. |
 | Verify settlement | Mirror Node polling worker matches transfers by memo + amount + merchant account |
 | Tamper-evident receipts | every event appended to an **HCS** topic; the sequence number is stored with the invoice |
+| **Rebuild the ledger without our database** | `/receipt?topic=0.0.x` and `yarn reconstruct --topic 0.0.x` read the public Mirror Node only |
 | Merchant notification | **signed webhooks** (`sha256` HMAC of `timestamp.body`) with retries |
 | Expiry / refund handling | `expireInvoice()` on-chain (callable by anyone after the deadline), refunds stay a merchant-signed action |
 | Accounting | CSV export + on-chain registry as the source of truth |
@@ -115,11 +117,41 @@ yarn reconciler:dev                             # reconciliation worker (2nd ter
 Full click-by-click instructions, including a testnet end-to-end walkthrough and
 troubleshooting: **[RUNBOOK.md](./RUNBOOK.md)**.
 
+## Verify a receipt with no credentials
+
+The HCS topic is the source of truth. This rebuilds invoice `INV-MU1G1FSW443` from the
+public Mirror Node — no `.env`, no database, no operator key:
+
+```bash
+yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443
+# → kind: invoice.paid, paymentTxId: 0.0.10541152-1789402480-818444585
+```
+
+Same data in the browser: [`/receipt?topic=0.0.10541151&id=INV-MU1G1FSW443`](https://hashscan.io/testnet/topic/0.0.10541151)
+
+![HCS receipt reconstructed without the gateway database](docs/images/receipt-hcs.png)
+
+Live quote (SaucerSwap V1 factory `0.0.9959`, 1 SAUCE out, WHBAR in):
+
+```bash
+curl "http://localhost:3000/api/quote?tokenIn=0.0.15058&tokenOut=0.0.1183558&amountOut=1000000"
+# → hop: direct, amountIn: 1819520, amountInMax: 1837715 (100 bps slippage)
+```
+
+## What this template is not
+
+It does **not** clone the eight official `scaffold-hbar` templates (`blank`, `hedera-demo`,
+`oracles`, `payments-scheduler`, `bridge`, `cross-chain-dca`, `tokenize-subscriptions`,
+`x402-pay-per-use`). A checkout that only settles the invoice token, or stamps HCS
+*after* the fact as an optional API, is a different (weaker) pattern: here the DEX
+quote is load-bearing, the swap is the settlement, and HCS is readable without us.
+
 ## Tests
 
 ```bash
-yarn test              # contract tests (invoice lifecycle, access control, expiry)
-yarn workspace @hmp/ledger test    # money/units, state machine, webhook signatures
+yarn test              # contract tests (invoice lifecycle, access control, expiry, SaucerSwap, HIP-1215)
+yarn workspace @hmp/ledger test    # money/units, state machine, webhooks, quote path, HCS reconstruct
+yarn reconstruct --topic 0.0.10541151   # live Mirror rebuild (needs network, no keys)
 yarn typecheck         # all workspaces
 ```
 
@@ -140,11 +172,11 @@ Verified locally (commands and results, not claims):
 |---|---|---|
 | Contract compiles | `yarn hardhat:compile` | ✅ 3 files, solc 0.8.28, evm target `paris` |
 | Contract behaviour | `yarn hardhat:test` | ✅ **16 passing** (lifecycle, HTS/SaucerSwap, HIP-1215 scheduleExpire, attest records the real payer) |
-| Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **11 passing** (units, memo, state machine, webhook signatures, entity→EVM) |
+| Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **23 passing** (units, memo, state machine, webhook signatures, entity→EVM, SaucerSwap path/quote, HCS reconstruct) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ 18.09.2026: scaffolds, outro renders, `.env.example` includes `SAUCERSWAP_ROUTER` |
 | Fresh clone `yarn verify` | `git clone . /tmp/fresh && node .yarn/releases/yarn-3.2.3.cjs install && yarn verify` | ✅ 18.09.2026: install 1m43s, **exit 0** — tsc + **16** hardhat + **11** ledger (no `.env`) |
 | Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, 8-assertion acceptance contract) | ✅ all valid JSON/YAML; contract: 2 critical / 5 major / 1 minor |
-| App build | `yarn next:build` | ✅ Next.js 15, 7 routes compiled |
+| App build | `yarn next:build` | ✅ Next.js 15, 10 routes compiled (`/api/quote`, `/api/receipts`, `/receipt` added 23.09.2026) |
 | App read path with **no configuration at all** | `next start` with every env var unset | ✅ dashboard renders with setup guidance, `/new` 200, `/api/health` lists what is missing, `POST /api/invoices` → clean 503 (no crash) |
 | Local end-to-end | docker Postgres + `prisma migrate dev` + app | ✅ create → list → checkout page → invalid amount 400 → cancel |
 | **Testnet end-to-end (chain 296)** | app + worker, real HBAR | ✅ see below |
@@ -186,6 +218,8 @@ Earlier HBAR checkout evidence (14.09.2026, previous registry `0xc978548F1c4606C
 - [x] Mirror Node reconciler worker + webhook delivery queue (`links.next` pagination)
 - [x] Testnet end-to-end walkthrough with recorded transaction ids (HBAR path)
 - [x] HIP-1215 `scheduleExpire` via HSS `0x16b` — mock unit tests **and** live testnet tx `0.0.7314364-1789727671-967513663`
+- [x] Live SaucerSwap V1 quote (`GET /api/quote`) — factory `getPair` + `getAmountsIn`, 1% slippage, fail-closed if no pool. Verified 23.09.2026: 1 SAUCE out ← 1 819 520 WHBAR tinybar in (`amountInMax` 1 837 715)
+- [x] HCS reconstruct without the database (`yarn reconstruct` + `/receipt?topic=`) — live topic `0.0.10541151` rebuilds `INV-MU1G1FSW443` as `invoice.paid`
 - [ ] Merchant onboarding (multiple merchants per deployment)
 
 Licence: MIT.

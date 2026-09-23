@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import CopyField from "@/components/CopyField";
 import PayPanel from "@/components/PayPanel";
 import StatusBadge from "@/components/StatusBadge";
-import { explorerAccount, explorerTopic, explorerTransaction, publicConfig } from "@/lib/config";
+import { explorerAccount, explorerTransaction, publicConfig } from "@/lib/config";
 import { loadInvoice } from "@/lib/invoices";
 
 export const dynamic = "force-dynamic";
@@ -77,8 +77,8 @@ export default async function CheckoutPage({ params }: Props) {
               <span className="text-zinc-400">HCS receipt: </span>
               {invoice.hcsSequence != null ? (
                 publicConfig.hcsTopicId ? (
-                  <a href={explorerTopic(publicConfig.hcsTopicId)} target="_blank" rel="noreferrer" className="text-acc hover:underline">
-                    sequence #{invoice.hcsSequence} ↗
+                  <a href={`/receipt?topic=${publicConfig.hcsTopicId}&id=${invoice.id}`} className="text-acc hover:underline">
+                    sequence #{invoice.hcsSequence} (reconstruct without the database) ↗
                   </a>
                 ) : (
                   <span className="mono">#{invoice.hcsSequence}</span>

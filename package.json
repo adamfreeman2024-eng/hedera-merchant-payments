@@ -27,6 +27,7 @@
     "hardhat:account": "yarn workspace @hmp/hardhat account",
     "hardhat:account:generate": "yarn workspace @hmp/hardhat account:generate",
     "ledger:test": "yarn workspace @hmp/ledger test",
+    "reconstruct": "yarn workspace @hmp/ledger reconstruct",
     "next:dev": "yarn workspace @hmp/nextjs dev",
     "next:build": "yarn workspace @hmp/nextjs build",
     "next:start": "yarn workspace @hmp/nextjs start",

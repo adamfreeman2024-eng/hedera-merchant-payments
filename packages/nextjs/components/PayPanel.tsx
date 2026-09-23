@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { encodeFunctionData } from "viem";
 
 type Eip1193Provider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
@@ -89,6 +89,26 @@ export default function PayPanel({
   const [connecting, setConnecting] = useState(false);
   const [paying, setPaying] = useState(false);
   const [tokenIn, setTokenIn] = useState("");
+  const [quote, setQuote] = useState<null | { ok: true; amountIn: string; amountInMax: string; hop: string; path: string[]; pathEvm: `0x${string}`[]; slippageBps: string; tokenIn?: { symbol: string; decimals: number } | null } | { ok: false; error: string }>(null);
+  const [quoting, setQuoting] = useState(false);
+
+  useEffect(() => {
+    const id = tokenIn.trim();
+    if (!id || !tokenHederaId || tokenHederaId === "HBAR") {
+      setQuote(null);
+      return;
+    }
+    setQuoting(true);
+    const handle = setTimeout(() => {
+      const params = new URLSearchParams({ tokenIn: id, tokenOut: tokenHederaId, amountOut: amount });
+      fetch(`/api/quote?${params}`)
+        .then(async (r) => (await r.json()) as typeof quote)
+        .then((body) => setQuote(body))
+        .catch((err) => setQuote({ ok: false, error: err instanceof Error ? err.message : "quote failed" }))
+        .finally(() => setQuoting(false));
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [tokenIn, tokenHederaId, amount]);
 
   const expectedChainHex = network === "mainnet" ? "0x127" : "0x128";
 
@@ -178,6 +198,7 @@ export default function PayPanel({
       if (!address) throw new Error("Connect a wallet first.");
       if (!registryConfigured || !tokenConfigured) throw new Error("Token path is not configured.");
       if (!saucerRouter) throw new Error("SaucerSwap router is not configured.");
+      if (!quote || !quote.ok) throw new Error(quote && !quote.ok ? quote.error : "Wait for a live quote before paying.");
       const p = await provider();
       await assertChain(p);
       const tokenOut = hederaEntityToEvm(tokenHederaId);
@@ -185,10 +206,11 @@ export default function PayPanel({
       if (tokenInEvm.toLowerCase() === tokenOut.toLowerCase()) {
         throw new Error("Swap path needs a different token than the invoice. Use Pay with invoice token.");
       }
-      const amountInMax = BigInt(amount);
+      const amountInMax = BigInt(quote.amountInMax);
+      const path = quote.pathEvm;
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
       const router = saucerRouter.startsWith("0x") ? saucerRouter : hederaEntityToEvm(saucerRouter);
-      setStatus("Approve the registry for tokenIn…");
+      setStatus(`Approve the registry for ${quote.amountInMax} base units of tokenIn…`);
       await send(
         p,
         address,
@@ -207,7 +229,7 @@ export default function PayPanel({
         encodeFunctionData({
           abi: REGISTRY_PAY_SWAP,
           functionName: "payInvoiceWithSwap",
-          args: [invoiceChainId as `0x${string}`, amountInMax, [tokenInEvm, tokenOut], deadline],
+          args: [invoiceChainId as `0x${string}`, amountInMax, path, deadline],
         })
       );
       setStatus(`Submitted ${hash.slice(0, 10)}… (router ${router.slice(0, 10)}…). Reload after confirmation.`);
@@ -290,22 +312,36 @@ export default function PayPanel({
           {tokenConfigured && registryConfigured && saucerRouter ? (
             <>
               <p className="text-zinc-300">
-                Pay with a different HTS token. The registry swaps to the invoice token through SaucerSwap V1 in the same
-                transaction. Without the DEX this path does not exist.
+                Pay with a different HTS token. The page asks SaucerSwap V1 for a live quote (direct pair, or one hop
+                through WHBAR). The registry then swaps to the invoice token in the same transaction. Without a pool
+                this path refuses to send a transaction.
               </p>
               <label className="mt-2 block text-xs text-zinc-400">
                 Token you hold (Hedera id)
                 <input
                   value={tokenIn}
                   onChange={(e) => setTokenIn(e.target.value)}
-                  placeholder="0.0.…"
+                  placeholder="0.0.1183558"
                   className="mt-1 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 font-mono text-sm text-zinc-100"
                 />
               </label>
+              {quoting ? <p className="mt-2 text-xs text-zinc-500">Quoting SaucerSwap…</p> : null}
+              {quote && quote.ok ? (
+                <p className="mt-2 text-xs text-zinc-300">
+                  Path: <code className="mono">{quote.path.join(" → ")}</code> ({quote.hop}). You pay at most{" "}
+                  <code className="mono">{quote.amountInMax}</code> base units ({quote.slippageBps} bps slippage). The
+                  merchant still receives the invoice amount exactly.
+                </p>
+              ) : null}
+              {quote && !quote.ok ? (
+                <p role="alert" className="mt-2 text-xs text-warn">
+                  {quote.error}
+                </p>
+              ) : null}
               <button
                 type="button"
                 onClick={payViaSwap}
-                disabled={paying || !address || !tokenIn.trim()}
+                disabled={paying || !address || !tokenIn.trim() || !quote || !quote.ok}
                 className="mt-2 rounded-md bg-acc px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"
               >
                 {paying ? "Swapping…" : "Pay via SaucerSwap"}

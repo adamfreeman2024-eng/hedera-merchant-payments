@@ -146,6 +146,19 @@ yarn reconciler:dev       # polls the Mirror Node every 5s
 | `InvoiceNotOpen` | already settled/cancelled/expired | create a new invoice |
 | Webhook not delivered | endpoint down / wrong secret | check `WebhookDelivery.lastError`, replays run automatically |
 | `HCS_RECEIPT_TOPIC_ID` empty | topic not created yet | `yarn reconciler:once --init-topic` |
+| Checkout swap button stays disabled | no live quote | `GET /api/quote?tokenIn=0.0.x&tokenOut=0.0.y&amountOut=…` — if `ok:false`, there is no SaucerSwap V1 pool (direct or via WHBAR). Do not force a swap. |
+| Quote RPC error / odd-length hex | Hashio rejects odd hex | path encoding lives in `packages/ledger/src/abiHex.ts`; do not hand-pad addresses |
+
+## 9b. Quote and reconstruct (no keys)
+
+```bash
+# Live SaucerSwap V1 quote (testnet defaults: factory 0.0.9959, router 0.0.19264)
+curl "http://localhost:3000/api/quote?tokenIn=0.0.15058&tokenOut=0.0.1183558&amountOut=1000000"
+
+# Rebuild invoices from the HCS topic — public Mirror Node only
+yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443
+# Browser: /receipt?topic=0.0.10541151&id=INV-MU1G1FSW443
+```
 
 ## 10. Mainnet checklist (before real money)
 

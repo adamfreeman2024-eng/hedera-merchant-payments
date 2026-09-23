@@ -40,9 +40,11 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 | No secrets / `.env` committed | ✅ | `git ls-files` clean; `.env*` gitignored |
 | Fresh install works | ✅ | clean clone + vendored Yarn 3.2.3, `install` 1m43s |
 | Build passes | ✅ | `yarn verify` exit 0 on a fresh clone |
-| Tests pass | ✅ | **16** hardhat + **11** ledger |
-| ≥1 Hedera service | ✅ | HTS `0x167` (HIP-336), HCS receipts, HSS `0x16b` (HIP-1215) |
+| Tests pass | ✅ | **16** hardhat + **23** ledger (working tree 23.09.2026). Fresh-clone `yarn verify` last recorded 18.09.2026 was 16+11 |
+| ≥1 Hedera service | ✅ | HTS `0x167` (HIP-336), HCS receipts, HSS `0x16b` (HIP-1215), SaucerSwap V1 quote+swap |
 | **Real testnet transaction / HashScan** | ✅ | `payInvoiceWithSwap` SETTLED `0.0.7314364-1789748240-167185116` |
+| Live quote (no keys) | ✅ 23.09 | `GET /api/quote` 1 SAUCE ← 1819520 WHBAR tinybar |
+| HCS reconstruct (no DB) | ✅ 23.09 | `yarn reconstruct --topic 0.0.10541151` → `INV-MU1G1FSW443` paid |
 | Original code | ✅ | clean-room; no other submission's code |
 | No clone of the 8 official templates | ✅ | official set: `blank`, `hedera-demo`, `oracles`, `payments-scheduler`, `bridge`, `cross-chain-dca`, `tokenize-subscriptions`, `x402-pay-per-use` |
 | CI workflow | ⚠️ on disk only | blocked by the `workflow` scope above — a scoring item, do not forget |

@@ -1,12 +1,19 @@
 {
   "name": "hedera-merchant-payments",
-  "description": "Non-custodial merchant payment gateway on Hedera: on-chain invoices (InvoiceRegistry), HTS token + HBAR checkout, SaucerSwap any-token settlement, Mirror Node reconciliation worker, HCS settlement receipts, signed webhooks, HIP-1215 scheduled expiry.",
+  "description": "Non-custodial merchant payment gateway on Hedera: on-chain invoices, HTS/HBAR checkout, SaucerSwap any-token quote+settlement, Mirror reconciliation, HCS receipts you can reconstruct without the database, signed webhooks, HIP-1215 scheduled expiry.",
   "version": "0.1.0",
   "create-scaffold-hbar": {
     "capabilities": {
-      "frontend": ["nextjs-app"],
-      "solidityFramework": ["hardhat"],
-      "packageManager": ["yarn", "npm"]
+      "frontend": [
+        "nextjs-app"
+      ],
+      "solidityFramework": [
+        "hardhat"
+      ],
+      "packageManager": [
+        "yarn",
+        "npm"
+      ]
     },
     "defaults": {
       "frontend": "nextjs-app",
@@ -17,21 +24,57 @@
       "node": ">=20.18.3"
     },
     "envVars": [
-      { "key": "HEDERA_NETWORK", "description": "testnet | mainnet | local" },
-      { "key": "HEDERA_OPERATOR_ID", "description": "Gateway operator account (ECDSA) — pays for HCS receipt topics and refund scheduling; never holds customer funds" },
-      { "key": "HEDERA_OPERATOR_KEY", "description": "ECDSA private key for the operator account above" },
-      { "key": "MERCHANT_ACCOUNT_ID", "description": "Merchant settlement account — customer payments land here directly (non-custodial)" },
-      { "key": "PAYMENT_TOKEN_ID", "description": "HTS token the merchant wants to receive (e.g. testnet USDC); leave empty to accept HBAR only" },
-      { "key": "SAUCERSWAP_ROUTER", "description": "SaucerSwap V1 router Hedera id or EVM address (testnet 0.0.19264). Required for any-token checkout; leave empty to disable swaps" },
-      { "key": "SAUCERSWAP_FACTORY", "description": "SaucerSwap V1 factory (testnet default 0.0.9959). Used by the live quote endpoint" },
-      { "key": "SAUCERSWAP_WHBAR", "description": "WHBAR token used as the one-hop quote token (testnet default 0.0.15058). The swap never wraps HBAR itself" },
-      { "key": "INVOICE_REGISTRY_ADDRESS", "description": "Deployed InvoiceRegistry address (from `hardhat:deploy`)" },
-      { "key": "HCS_RECEIPT_TOPIC_ID", "description": "HCS topic collecting settlement receipts (created by `reconciler:once --init-topic`)" },
-      { "key": "DATABASE_URL", "description": "Postgres connection string for the invoice ledger" },
-      { "key": "WEBHOOK_SIGNING_SECRET", "description": "HMAC-SHA256 secret used to sign outbound webhooks" }
+      {
+        "key": "HEDERA_NETWORK",
+        "description": "testnet | mainnet | local"
+      },
+      {
+        "key": "HEDERA_OPERATOR_ID",
+        "description": "Gateway operator account (ECDSA) \u2014 pays for HCS receipt topics and refund scheduling; never holds customer funds"
+      },
+      {
+        "key": "HEDERA_OPERATOR_KEY",
+        "description": "ECDSA private key for the operator account above"
+      },
+      {
+        "key": "MERCHANT_ACCOUNT_ID",
+        "description": "Merchant settlement account \u2014 customer payments land here directly (non-custodial)"
+      },
+      {
+        "key": "PAYMENT_TOKEN_ID",
+        "description": "HTS token the merchant wants to receive (e.g. testnet USDC); leave empty to accept HBAR only"
+      },
+      {
+        "key": "SAUCERSWAP_ROUTER",
+        "description": "SaucerSwap V1 router Hedera id or EVM address (testnet 0.0.19264). Required for any-token checkout; leave empty to disable swaps"
+      },
+      {
+        "key": "SAUCERSWAP_FACTORY",
+        "description": "SaucerSwap V1 factory (testnet default 0.0.9959). Used by the live quote endpoint"
+      },
+      {
+        "key": "SAUCERSWAP_WHBAR",
+        "description": "WHBAR token used as the one-hop quote token (testnet default 0.0.15058). The swap never wraps HBAR itself"
+      },
+      {
+        "key": "INVOICE_REGISTRY_ADDRESS",
+        "description": "Deployed InvoiceRegistry address (from `hardhat:deploy`)"
+      },
+      {
+        "key": "HCS_RECEIPT_TOPIC_ID",
+        "description": "HCS topic collecting settlement receipts (created by `reconciler:once --init-topic`)"
+      },
+      {
+        "key": "DATABASE_URL",
+        "description": "Postgres connection string for the invoice ledger"
+      },
+      {
+        "key": "WEBHOOK_SIGNING_SECRET",
+        "description": "HMAC-SHA256 secret used to sign outbound webhooks"
+      }
     ],
     "instructions": [
-      "The gateway is NON-CUSTODIAL: customers pay the merchant, or swap via SaucerSwap in the same transaction. This software only issues invoices, verifies settlement, writes HCS receipts and calls webhooks.",
+      "The gateway is NON-CUSTODIAL: customers pay the merchant, or swap via a live SaucerSwap V1 quote then an atomic swap. Receipts reconstruct from the HCS topic with no database. This software never holds customer funds.",
       "Run `hardhat:deploy --network hederaTestnet` before starting the dashboard, then paste INVOICE_REGISTRY_ADDRESS into .env."
     ],
     "outro": {
@@ -39,24 +82,60 @@
         {
           "steps": [
             {
-              "text": "Merchant payment gateway — pay HBAR, the invoice HTS token, or any other HTS token via SaucerSwap V1 in the same transaction. The gateway never keeps the money."
+              "text": "Merchant payment gateway \u2014 pay HBAR, the invoice HTS token, or any other HTS token via a live SaucerSwap V1 quote then an atomic swap. Reconstruct receipts from HCS with no database. The gateway never keeps the money."
             }
           ]
         },
         {
           "title": "Next steps",
           "steps": [
-            { "label": "Copy environment files", "command": "cp .env.example .env" },
-            { "command": "cp packages/nextjs/.env.example packages/nextjs/.env" },
-            { "label": "Start the local ledger (Postgres)", "command": "{run:ledger:up}" },
-            { "label": "Apply the database schema", "command": "{run:db:migrate}" },
-            { "label": "Generate a deployer/operator account", "command": "{run:hardhat:account:generate}" },
-            { "label": "Fund it with testnet HBAR", "url": "https://portal.hedera.com/faucet" },
-            { "label": "Deploy InvoiceRegistry to Hedera testnet", "command": "{run:hardhat:deploy} --network hederaTestnet" },
-            { "label": "Initialise the HCS receipt topic", "command": "{run:reconciler:once} --init-topic" },
-            { "label": "Run the contract tests", "command": "{run:hardhat:test}" },
-            { "label": "Start the merchant dashboard", "command": "{run:next:dev}" },
-            { "label": "Run the reconciliation worker (second terminal)", "command": "{run:reconciler:dev}" }
+            {
+              "label": "Copy environment files",
+              "command": "cp .env.example .env"
+            },
+            {
+              "command": "cp packages/nextjs/.env.example packages/nextjs/.env"
+            },
+            {
+              "label": "Start the local ledger (Postgres)",
+              "command": "{run:ledger:up}"
+            },
+            {
+              "label": "Apply the database schema",
+              "command": "{run:db:migrate}"
+            },
+            {
+              "label": "Generate a deployer/operator account",
+              "command": "{run:hardhat:account:generate}"
+            },
+            {
+              "label": "Fund it with testnet HBAR",
+              "url": "https://portal.hedera.com/faucet"
+            },
+            {
+              "label": "Deploy InvoiceRegistry to Hedera testnet",
+              "command": "{run:hardhat:deploy} --network hederaTestnet"
+            },
+            {
+              "label": "Initialise the HCS receipt topic",
+              "command": "{run:reconciler:once} --init-topic"
+            },
+            {
+              "label": "Run the contract tests",
+              "command": "{run:hardhat:test}"
+            },
+            {
+              "label": "Start the merchant dashboard",
+              "command": "{run:next:dev}"
+            },
+            {
+              "label": "Run the reconciliation worker (second terminal)",
+              "command": "{run:reconciler:dev}"
+            },
+            {
+              "label": "Rebuild invoices from HCS (no database)",
+              "command": "{run:reconstruct} --topic 0.0.x"
+            }
           ]
         }
       ]

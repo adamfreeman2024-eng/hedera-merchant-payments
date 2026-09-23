@@ -31,7 +31,7 @@ agent, read this file before editing.
 ```bash
 yarn typecheck                 # every workspace
 yarn test                      # contract tests
-yarn workspace @hmp/ledger test  # money/state-machine/webhook unit tests
+yarn workspace @hmp/ledger test  # money/state-machine/webhook/quote/reconstruct unit tests
 yarn hardhat:compile
 ```
 

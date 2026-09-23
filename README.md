@@ -37,7 +37,7 @@ That is what this template ships.
 | **Rebuild the ledger without our database** | `/receipt?topic=0.0.x` and `yarn reconstruct --topic 0.0.x` read the public Mirror Node only |
 | Merchant notification | **signed webhooks** (`sha256` HMAC of `timestamp.body`) with retries |
 | Expiry / refund handling | `expireInvoice()` on-chain (callable by anyone after the deadline), refunds stay a merchant-signed action |
-| Accounting | CSV export + on-chain registry as the source of truth |
+| Accounting | HCS topic is the source of truth — `yarn reconstruct --topic 0.0.x` rebuilds invoices without Postgres |
 
 ## Custody model (the important part)
 
@@ -74,10 +74,10 @@ customer wallet ──HBAR transfer (memo HMP-INV…)─────────
 ## Architecture
 
 ```
-packages/hardhat     InvoiceRegistry.sol + hardhat-deploy + typechain (contracts, tests)
+packages/hardhat     InvoiceRegistry.sol + tests (HTS, SaucerSwap, HIP-1215)
 packages/ledger      Prisma schema + domain rules (money units, invoice state machine,
-                     HCS receipts, signed webhooks) — unit-tested, shared by app & worker
-packages/nextjs      merchant dashboard, hosted checkout, public API (App Router)
+                     HCS receipts, signed webhooks, SaucerSwap quote, HCS reconstruct)
+packages/nextjs      merchant dashboard, hosted checkout, public quote + receipt APIs
 services/reconciler  long-running worker: Mirror Node → ledger → HCS → webhooks
 ```
 
@@ -127,7 +127,8 @@ yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443
 # → kind: invoice.paid, paymentTxId: 0.0.10541152-1789402480-818444585
 ```
 
-Same data in the browser: [`/receipt?topic=0.0.10541151&id=INV-MU1G1FSW443`](https://hashscan.io/testnet/topic/0.0.10541151)
+Same data in the browser (this app, no HashScan login): `/receipt?topic=0.0.10541151&id=INV-MU1G1FSW443`
+(topic on HashScan: https://hashscan.io/testnet/topic/0.0.10541151)
 
 ![HCS receipt reconstructed without the gateway database](docs/images/receipt-hcs.png)
 
@@ -172,11 +173,11 @@ Verified locally (commands and results, not claims):
 |---|---|---|
 | Contract compiles | `yarn hardhat:compile` | ✅ 3 files, solc 0.8.28, evm target `paris` |
 | Contract behaviour | `yarn hardhat:test` | ✅ **16 passing** (lifecycle, HTS/SaucerSwap, HIP-1215 scheduleExpire, attest records the real payer) |
-| Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **23 passing** (units, memo, state machine, webhook signatures, entity→EVM, SaucerSwap path/quote, HCS reconstruct) |
+| Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **23 passing** (23.09.2026 working tree: units, memo, state machine, webhooks, entity→EVM, SaucerSwap path/quote, HCS reconstruct) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ 18.09.2026: scaffolds, outro renders, `.env.example` includes `SAUCERSWAP_ROUTER` |
-| Fresh clone `yarn verify` | `git clone . /tmp/fresh && node .yarn/releases/yarn-3.2.3.cjs install && yarn verify` | ✅ 18.09.2026: install 1m43s, **exit 0** — tsc + **16** hardhat + **11** ledger (no `.env`) |
-| Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, 8-assertion acceptance contract) | ✅ all valid JSON/YAML; contract: 2 critical / 5 major / 1 minor |
-| App build | `yarn next:build` | ✅ Next.js 15, 10 routes compiled (`/api/quote`, `/api/receipts`, `/receipt` added 23.09.2026) |
+| Fresh clone `yarn verify` | `git clone . /tmp/fresh && node .yarn/releases/yarn-3.2.3.cjs install && yarn verify` | ✅ 18.09.2026: install 1m43s, **exit 0** — tsc + **16** hardhat + **11** ledger. **Not re-run after the 23.09 quote/reconstruct commit**; working-tree tests that day are 16 hardhat + 23 ledger + next build 10 routes |
+| Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, 8-assertion acceptance contract) | ✅ all valid JSON/YAML; contract: 2 critical / 5 major / 1 minor. Does **not** yet assert `/api/quote` or `/receipt` |
+| App build | `yarn next:build` | ✅ 23.09.2026: Next.js 15, 10 routes (`/api/quote`, `/api/receipts`, `/receipt` included) |
 | App read path with **no configuration at all** | `next start` with every env var unset | ✅ dashboard renders with setup guidance, `/new` 200, `/api/health` lists what is missing, `POST /api/invoices` → clean 503 (no crash) |
 | Local end-to-end | docker Postgres + `prisma migrate dev` + app | ✅ create → list → checkout page → invalid amount 400 → cancel |
 | **Testnet end-to-end (chain 296)** | app + worker, real HBAR | ✅ see below |
@@ -196,6 +197,8 @@ Current ABI (18.09.2026) — operator `0.0.9586920` / `0xE1B590d179a8dA38eAE3219
 | HashScan contract | https://hashscan.io/testnet/contract/0.0.10600857 |
 | HashScan live swap (SETTLED) | https://hashscan.io/testnet/transaction/0.0.7314364-1789748240-167185116 |
 | Mirror Node (JSON, curl-friendly) | https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.7314364-1789748240-167185116 |
+| Live `GET /api/quote` (23.09.2026) | 1 SAUCE out (`1000000`) ← `1819520` WHBAR tinybar in, `amountInMax` `1837715`, hop `direct`, factory `0.0.9959` |
+| Live `yarn reconstruct` (23.09.2026) | topic `0.0.10541151` → `INV-MU1G1FSW443` `invoice.paid`, tx `0.0.10541152-1789402480-818444585` |
 
 Earlier HBAR checkout evidence (14.09.2026, previous registry `0xc978548F1c4606CE7A2d15D8ED31Fe88820Df670`):
 
@@ -230,5 +233,5 @@ Licence: MIT.
 - [ ] `.github/workflows/ci.yaml` is committed. It is ignored right now because the
       GitHub token in use has no `workflow` scope; run `gh auth refresh -s workflow`
       and then `git add -f .github/workflows/ci.yaml && git commit -m "ci: add workflow"`.
-- [x] README status table matches the latest local runs (21.09.2026).
+- [x] README status table matches the latest local runs (23.09.2026).
 - [x] No secrets in the tree besides Hardhat account #0 (named `HARDHAT_DEV_KEY`).

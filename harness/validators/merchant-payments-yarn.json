@@ -20,7 +20,7 @@
       "name": "test-ledger",
       "command": "yarn workspace @hmp/ledger test",
       "timeoutMs": 180000,
-      "purpose": "Unit tests for units, memo, invoice state machine and webhook signatures."
+      "purpose": "Unit tests for units, memo, invoice state machine, webhook signatures, SaucerSwap quote path, HCS reconstruct."
     },
     {
       "name": "compile-contracts",

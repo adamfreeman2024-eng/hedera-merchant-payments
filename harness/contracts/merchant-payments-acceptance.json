@@ -2,13 +2,13 @@
   "name": "merchant-payments-acceptance",
   "template": "hedera-merchant-payments",
   "prd": "harness/docs/prds/merchant-payments.md",
-  "version": 1,
+  "version": 2,
   "description": "Browser-verifiable acceptance contract for the merchant payment gateway. The semantic validator grades the running app against these assertions — not the raw PRD.",
-  "routes": ["/", "/new", "/pay/[invoiceId]", "/api/invoices", "/api/invoices/[invoiceId]"],
+  "routes": ["/", "/new", "/pay/[invoiceId]", "/receipt", "/api/invoices", "/api/invoices/[invoiceId]", "/api/quote", "/api/receipts", "/api/health"],
   "evaluationRules": {
     "posture": "adversarial",
     "failOnUncertainty": "If an assertion cannot be positively verified from the running app, mark it FAILED. Absence of evidence is a failure.",
-    "credentials": "The dashboard and checkout must render without any .env, private keys or funded account. Missing credentials must not excuse a broken read path.",
+    "credentials": "The dashboard, checkout, /receipt and /api/quote must render without any .env, private keys or funded account. Missing credentials must not excuse a broken read path.",
     "walletGatedFlows": "Without a Test Signer, walletRequired assertions are affordance-only (button exists, wallet modal/QR offered, no uncaught errors). With a Test Signer and chainValidation enabled, executableWithTestSigner assertions MUST complete a real transaction and be verified against the testnet mirror node.",
     "onChainVerification": "For executableWithTestSigner assertions confirm effects via https://testnet.mirrornode.hedera.com (account transfers, topic messages, contract results). Poll up to ~30s for mirror lag.",
     "evidence": "Every verdict issue must cite what was observed: route visited, element found/absent, console output, mirror responses.",
@@ -56,8 +56,8 @@
       "severity": "major",
       "walletRequired": false,
       "verifiableWithoutCredentials": true,
-      "statement": "The checkout distinguishes the two payment paths: a native HBAR transfer carrying the memo, and an HTS-token payment that requires an approval (HIP-336 allowance) before the atomic settlement call.",
-      "howToVerify": "On the checkout route assert both paths are described/labelled in the UI. For an HTS-configured deployment assert the approval step is shown before the pay action; for HBAR assert the memo requirement is called out explicitly with the exact memo string."
+      "statement": "The checkout distinguishes three payment paths: (A) native HBAR transfer carrying the memo, (B) HTS invoice-token payment that requires a HIP-336 allowance, (C) any other HTS token via a live SaucerSwap V1 quote then payInvoiceWithSwap. Path C must not offer a send button until a quote exists.",
+      "howToVerify": "On the checkout route assert paths A/B/C are labelled. For HBAR assert the memo is called out verbatim. For Path C assert a token-id input and that the swap button stays disabled until /api/quote returns ok:true (or shows an honest no-pool error)."
     },
     {
       "id": "C5",
@@ -87,8 +87,8 @@
       "severity": "major",
       "walletRequired": false,
       "verifiableWithoutCredentials": true,
-      "statement": "The dashboard exposes settlement evidence for a settled invoice: the payment transaction reference and (when a receipt topic is configured) the HCS sequence number, each linkable to HashScan.",
-      "howToVerify": "For the settled invoice assert the detail view shows the payment tx id and, if HCS_RECEIPT_TOPIC_ID is configured, a sequence number, plus a link to the network explorer (hashscan.io)."
+      "statement": "The dashboard exposes settlement evidence for a settled invoice: the payment transaction reference and (when a receipt topic is configured) the HCS sequence number, each linkable to HashScan or to /receipt?topic=&id=.",
+      "howToVerify": "For the settled invoice assert the detail view shows the payment tx id and, if HCS_RECEIPT_TOPIC_ID is configured, a sequence number plus a reconstruct link (/receipt?topic=…&id=…)."
     },
     {
       "id": "C8",
@@ -99,6 +99,26 @@
       "verifiableWithoutCredentials": true,
       "statement": "An invoice past its expiry is reported as expired rather than open, and the worker can retry webhook delivery without losing the settlement.",
       "howToVerify": "Create an invoice with a 1-minute expiry and do not pay it. Assert the dashboard reports it as EXPIRED (or 'unpaid/expired') after the deadline rather than claiming it is payable. Assert a webhook delivery record exists when MERCHANT_WEBHOOK_URL is configured, with attempts/status visible."
+    },
+    {
+      "id": "C9",
+      "journey": "Live SaucerSwap quote",
+      "route": "/api/quote",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true,
+      "statement": "GET /api/quote returns a live SaucerSwap V1 quote (or an honest no-pool error) with no database and no operator key. Checkout must not send a swap without this quote.",
+      "howToVerify": "GET /api/quote?tokenIn=0.0.15058&tokenOut=0.0.1183558&amountOut=1000000 on testnet. Assert HTTP 200 and JSON ok:true with hop, path, amountIn, amountInMax (bigint strings). GET /api/quote with missing tokenIn asserts 400, not a crash. GET a token with no pool asserts ok:false (404), not a signed tx."
+    },
+    {
+      "id": "C10",
+      "journey": "Reconstruct receipts without the database",
+      "route": "/receipt",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true,
+      "statement": "/receipt and GET /api/receipts rebuild invoice state from a public HCS topic via the Mirror Node. No Postgres, no operator key.",
+      "howToVerify": "GET /receipt (no query) → 200, a form asking for topic id. GET /receipt?topic=0.0.10541151&id=INV-MU1G1FSW443 → 200 and the page shows invoice.paid plus the payment tx id. GET /api/receipts?topic=0.0.10541151&id=INV-MU1G1FSW443 → JSON ok:true, kind invoice.paid. Missing topic → 400, not a crash."
     }
   ]
 }

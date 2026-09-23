@@ -10,7 +10,7 @@ any reviewer as a machine-checkable product contract.
 | `validators/merchant-payments-static.json` | static invariants (manifest identity, layout, no secrets, README claims that must match real scripts) | 1 |
 | `validators/merchant-payments-yarn.json` | the commands that must pass: install, ledger tests, contract compile+test, production build | 1 |
 | `playwright/merchant-payments-smoke.yaml` | boots the app and checks the critical routes render | 2 |
-| `contracts/merchant-payments-acceptance.json` | the graded product contract: 8 numbered assertions with severity, wallet flags and how-to-verify steps | 3 |
+| `contracts/merchant-payments-acceptance.json` | the graded product contract: 10 numbered assertions (C1–C10) including live quote and HCS reconstruct | 3 |
 | `docs/prds/merchant-payments.md` | the PRD the contract is derived from | — |
 
 ## Running it
@@ -37,6 +37,6 @@ Enabling it turns `C6` into an end-to-end assertion verified against the testnet
 
 - The contract is written from the PRD journeys, not from the file list — and it is what a
   semantic validator grades.
-- Read-path assertions (`C1`–`C4`, `C7`, `C8`) must pass **without credentials**; wallet-gated
+- Read-path assertions (`C1`–`C4`, `C7`–`C10`) must pass **without credentials**; wallet-gated
   ones (`C5`, `C6`) are affordance-only unless a test signer is provided.
 - Severity is deliberately conservative: only `C1` and `C6` are `critical` (app loads / money moves).

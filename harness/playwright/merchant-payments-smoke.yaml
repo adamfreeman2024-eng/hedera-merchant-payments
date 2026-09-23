@@ -12,6 +12,12 @@ routes:
   - path: /new
     expect: 200
     description: Invoice creation form renders.
+  - path: /receipt
+    expect: 200
+    description: HCS reconstruct form renders with no database.
+  - path: /api/health
+    expect: 200
+    description: Health reports missing config instead of crashing.
 forbidden:
   visibleText:
     - "Internal Server Error"

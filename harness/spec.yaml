@@ -10,14 +10,14 @@
 # validator grades the RUNNING app against contracts/*-acceptance.json, not the PRD.
 
 name: hedera-merchant-payments
-description: Non-custodial merchant payment gateway — on-chain invoices, HTS/HBAR checkout, Mirror Node reconciliation, HCS receipts, signed webhooks.
+description: Non-custodial merchant payment gateway — on-chain invoices, HTS/HBAR checkout, live SaucerSwap quote, Mirror Node reconciliation, HCS receipts reconstructable without a database, signed webhooks.
 
 prd: harness/docs/prds/merchant-payments.md
 contract: harness/contracts/merchant-payments-acceptance.json
 
 seed:
   # The harness seeds a workspace from this template repo (community template).
-  repo: hedera-dev-template/hedera-merchant-payments
+  repo: adamfreeman2024-eng/hedera-merchant-payments
   ref: main
   preflight:
     commands:
@@ -93,7 +93,11 @@ requiredFiles:
   - packages/hardhat/contracts/InvoiceRegistry.sol
   - packages/ledger/src/money.ts
   - packages/ledger/src/invoice.ts
+  - packages/ledger/src/saucerQuote.ts
+  - packages/ledger/src/reconstruct.ts
   - packages/nextjs/package.json
+  - packages/nextjs/app/api/quote/route.ts
+  - packages/nextjs/app/receipt/page.tsx
   - services/reconciler/src/cli.ts
 
 forbiddenFiles:

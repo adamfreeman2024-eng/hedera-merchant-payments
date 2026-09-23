@@ -13,7 +13,7 @@
       "README.md",
       "RUNBOOK.md",
       "AGENTS.md",
-      "LICENCE",
+      "LICENSE",
       "docker-compose.yml",
       ".env.example",
       "package.json",
@@ -22,8 +22,14 @@
       "packages/ledger/prisma/schema.prisma",
       "packages/ledger/src/money.ts",
       "packages/ledger/src/invoice.ts",
+      "packages/ledger/src/saucerQuote.ts",
+      "packages/ledger/src/reconstruct.ts",
       "packages/ledger/test/ledger.test.ts",
+      "packages/ledger/test/saucerQuote.test.ts",
+      "packages/ledger/test/reconstruct.test.ts",
       "packages/nextjs/package.json",
+      "packages/nextjs/app/api/quote/route.ts",
+      "packages/nextjs/app/receipt/page.tsx",
       "services/reconciler/src/cli.ts"
     ],
     "forbidden": [
@@ -36,7 +42,7 @@
   "textAssertions": [
     {
       "file": "README.md",
-      "contains": ["Custody model", "InvoiceRegistry", "HCS", "HTS", "Mirror Node"]
+      "contains": ["Custody model", "InvoiceRegistry", "HCS", "HTS", "Mirror Node", "SaucerSwap", "reconstruct"]
     },
     {
       "file": "README.md",
@@ -48,11 +54,11 @@
     },
     {
       "file": "packages/hardhat/contracts/InvoiceRegistry.sol",
-      "contains": ["0x167", "transferFrom", "attestHbarSettlement"]
+      "contains": ["0x167", "transferFrom", "attestHbarSettlement", "payInvoiceWithSwap"]
     },
     {
       "file": "harness/docs/prds/merchant-payments.md",
-      "contains": ["Hedera Token Service", "Consensus Service", "Mirror Node"]
+      "contains": ["Hedera Token Service", "Consensus Service", "Mirror Node", "SaucerSwap"]
     }
   ]
 }

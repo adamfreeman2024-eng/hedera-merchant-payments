@@ -38,14 +38,22 @@ native transfer carrying the memo → the reconciler matches memo + amount + des
 Mirror Node → invoice becomes SETTLED with the transaction id.
 
 **J4 — Pay (HTS token path, wallet-gated, atomic).**
-Checkout page → *Pay with token* → the wallet first grants the registry a HIP-336 allowance →
+Checkout page → *Pay with invoice token* → the wallet first grants the registry a HIP-336 allowance →
 the registry calls `HTS.transferFrom(payer → merchant)` in the same transaction as the status
 change, so an invoice can never be marked paid without the tokens moving.
+
+**J4b — Pay (any other HTS token via SaucerSwap, wallet-gated, atomic).**
+Checkout Path C → customer pastes the HTS token they hold → `GET /api/quote` asks the SaucerSwap
+V1 factory for a pair (direct, or one hop through WHBAR) and `getAmountsIn` → if no pool, the
+page shows an honest error and **does not send a transaction**. If a quote exists, approve +
+`payInvoiceWithSwap` swaps to the invoice token in the same transaction. The merchant still
+receives the invoice token. Amounts are `bigint`; default slippage is 100 bps.
 
 **J5 — Receipts and notification.**
 On settlement (or expiry/cancellation) the worker appends an HCS receipt and POSTs a signed
 webhook (`sha256=<hmac of timestamp.body>`) to the merchant. Failed deliveries are retried and
-recorded.
+recorded. Anyone can rebuild the ledger from the topic with no database:
+`yarn reconstruct --topic 0.0.x` or `/receipt?topic=0.0.x`.
 
 **J6 — Expire.**
 An unpaid invoice past its deadline is reported as EXPIRED; `expireInvoice()` on-chain is
@@ -55,8 +63,11 @@ callable by anyone after the deadline (and is the hook for a scheduled transacti
 
 - **Hedera Token Service (HTS, `0x167`)** — token checkout via HIP-336 allowances
   (`approve` / `allowance` / `transferFrom`); funds move payer → merchant inside one transaction.
+- **SaucerSwap V1** — load-bearing DEX. Live quote (`getPair` + `getAmountsIn`) then
+  `payInvoiceWithSwap` in the same transaction. Without a pool the quote is `ok: false`.
 - **Consensus Service (HCS)** — settlement/expiry/cancel receipts; sequence number stored with
-  the invoice so the DB can be cross-checked against public consensus order.
+  the invoice so the DB can be cross-checked against public consensus order. Reconstructable
+  via Mirror Node with no operator key.
 - **Smart Contracts** — `InvoiceRegistry` (invoice terms, status, settlement reference; OpenZeppelin
   `Ownable` so the merchant can rotate the gateway operator).
 - **Mirror Node REST** — source of truth for HBAR settlement (memo + amount + destination).

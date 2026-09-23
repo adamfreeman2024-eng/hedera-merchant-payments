@@ -23,11 +23,11 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 - [ ] **Submit the entry** through the form Hedera sends / links in the brief.
 - [ ] **Run the self-check script** Hedera said would arrive at the start of the
       build week, and paste its output here.
-- [ ] **Paste the one-click install command** from the brief into this file once the
-      repo is public, then verify it end-to-end:
+- [x] **Paste the one-click install command** — already in README / this file:
       ```bash
       npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
       ```
+      Fresh `git clone` of the public repo + `yarn verify` was re-run **23.09.2026** (exit 0, 16 hardhat + 23 ledger). The `npx create-scaffold-hbar` path itself was last proven 21.09.2026 (outro renders).
 
 ## Gate items and their evidence
 
@@ -38,9 +38,9 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 | README + `AGENTS.md` | ✅ | both at root |
 | MIT licence | ✅ | `LICENSE` (renamed from `LICENCE` for canonical detection) |
 | No secrets / `.env` committed | ✅ | `git ls-files` clean; `.env*` gitignored |
-| Fresh install works | ✅ | clean clone + vendored Yarn 3.2.3, `install` 1m43s |
-| Build passes | ✅ | `yarn verify` exit 0 on a fresh clone |
-| Tests pass | ✅ | **16** hardhat + **23** ledger (working tree 23.09.2026). Fresh-clone `yarn verify` last recorded 18.09.2026 was 16+11 |
+| Fresh install works | ✅ 23.09.2026 | public clone `53cb29a`, vendored Yarn 3.2.3, install 67.6s |
+| Build passes | ✅ 23.09.2026 | `yarn verify` exit 0 + `yarn next:build` 10 routes on that clone |
+| Tests pass | ✅ 23.09.2026 | **16** hardhat + **23** ledger on the public clone |
 | ≥1 Hedera service | ✅ | HTS `0x167` (HIP-336), HCS receipts, HSS `0x16b` (HIP-1215), SaucerSwap V1 quote+swap |
 | **Real testnet transaction / HashScan** | ✅ | `payInvoiceWithSwap` SETTLED `0.0.7314364-1789748240-167185116` |
 | Live quote (no keys) | ✅ 23.09 | `GET /api/quote` 1 SAUCE ← 1819520 WHBAR tinybar |

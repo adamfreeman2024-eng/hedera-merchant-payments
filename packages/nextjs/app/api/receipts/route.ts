@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
 import { reconstructTopic } from "@hmp/ledger";
 import { config, mirrorBase } from "@/lib/config";
+import { corsPreflight, jsonCors } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
+
+export function OPTIONS() {
+  return corsPreflight();
+}
 
 /**
  * Public, credential-free receipt lookup.
@@ -16,9 +20,9 @@ export async function GET(req: Request) {
   const topic = (url.searchParams.get("topic") || config.hcsTopicId || "").trim();
   const id = (url.searchParams.get("id") || "").trim();
   if (!topic) {
-    return NextResponse.json(
+    return jsonCors(
       { ok: false, error: "Pass ?topic=0.0.x (or set HCS_RECEIPT_TOPIC_ID). No database is used." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -30,10 +34,15 @@ export async function GET(req: Request) {
     });
     if (id) {
       const row = report.latest[id];
-      if (!row) return NextResponse.json({ ok: false, error: `Invoice ${id} is not on topic ${topic}`, topic, messagesSeen: report.messagesSeen }, { status: 404 });
-      return NextResponse.json({ ok: true, topic, messagesSeen: report.messagesSeen, skipped: report.skipped, receipt: row });
+      if (!row) {
+        return jsonCors(
+          { ok: false, error: `Invoice ${id} is not on topic ${topic}`, topic, messagesSeen: report.messagesSeen },
+          { status: 404 },
+        );
+      }
+      return jsonCors({ ok: true, topic, messagesSeen: report.messagesSeen, skipped: report.skipped, receipt: row });
     }
-    return NextResponse.json({
+    return jsonCors({
       ok: true,
       topic,
       messagesSeen: report.messagesSeen,
@@ -42,6 +51,6 @@ export async function GET(req: Request) {
       latest: report.latest,
     });
   } catch (err) {
-    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "reconstruct failed" }, { status: 502 });
+    return jsonCors({ ok: false, error: err instanceof Error ? err.message : "reconstruct failed" }, { status: 502 });
   }
 }

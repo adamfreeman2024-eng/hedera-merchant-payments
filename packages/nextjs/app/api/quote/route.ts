@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   amountsInReader,
   ethCall,
@@ -8,8 +7,13 @@ import {
   SAUCER_TESTNET,
 } from "@hmp/ledger";
 import { config, mirrorBase } from "@/lib/config";
+import { corsPreflight, jsonCors } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
+
+export function OPTIONS() {
+  return corsPreflight();
+}
 
 function rpcUrl(): string {
   return process.env.HEDERA_RPC_URL || (config.network === "mainnet" ? "https://mainnet.hashio.io/api" : "https://testnet.hashio.io/api");
@@ -53,28 +57,28 @@ export async function GET(req: Request) {
   const slippageRaw = (url.searchParams.get("slippageBps") || "100").trim();
 
   if (!tokenIn || !tokenOut) {
-    return NextResponse.json({ ok: false, error: "tokenIn and tokenOut (Hedera 0.0.x ids) are required" }, { status: 400 });
+    return jsonCors({ ok: false, error: "tokenIn and tokenOut (Hedera 0.0.x ids) are required" }, { status: 400 });
   }
   if (tokenOut === "HBAR") {
-    return NextResponse.json(
+    return jsonCors(
       { ok: false, error: "HBAR invoices cannot use the SaucerSwap path — Path A is a native transfer with memo." },
-      { status: 400 }
+      { status: 400 },
     );
   }
   let amountOut: bigint;
   try {
     amountOut = BigInt(amountOutRaw);
   } catch {
-    return NextResponse.json({ ok: false, error: "amountOut must be a base-unit integer string" }, { status: 400 });
+    return jsonCors({ ok: false, error: "amountOut must be a base-unit integer string" }, { status: 400 });
   }
 
   const factory = factoryId();
   const router = routerId();
   const hop = whbarId();
   if (!factory || !router) {
-    return NextResponse.json(
+    return jsonCors(
       { ok: false, error: "SaucerSwap factory/router not configured (set SAUCERSWAP_FACTORY + SAUCERSWAP_ROUTER, or use testnet defaults)." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -90,10 +94,10 @@ export async function GET(req: Request) {
     getAmountsIn: amountsInReader(call, toEvm(router)),
   });
 
-  if (!quoted.ok) return NextResponse.json(quoted, { status: 404 });
+  if (!quoted.ok) return jsonCors(quoted, { status: 404 });
 
   const [inMeta, outMeta] = await Promise.all([tokenMeta(tokenIn), tokenMeta(tokenOut)]);
-  return NextResponse.json({
+  return jsonCors({
     ok: true,
     network: config.network,
     hop: quoted.path.hop,

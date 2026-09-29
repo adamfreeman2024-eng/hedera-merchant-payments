@@ -1,0 +1,9 @@
+# Hedera Merchant Payments
+
+Non-custodial merchant invoices on Hedera. Customer funds move payer → merchant in the same transaction. The registry never holds a balance.
+
+- GET /api/health
+- GET /api/quote
+- GET /api/receipts
+- GET /api/agent/manifest
+- /receipt

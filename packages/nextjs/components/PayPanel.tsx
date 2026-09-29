@@ -55,6 +55,19 @@ function hederaEntityToEvm(id: string): `0x${string}` {
   return `0x${BigInt(match[1]).toString(16).padStart(40, "0")}`;
 }
 
+function humanAmount(units: string, decimals: number | undefined): string {
+  if (decimals == null || decimals < 0) return units;
+  try {
+    const n = BigInt(units);
+    const base = 10n ** BigInt(decimals);
+    const whole = n / base;
+    const frac = (n % base).toString().padStart(decimals, "0").replace(/0+$/, "");
+    return frac ? `${whole}.${frac}` : whole.toString();
+  } catch {
+    return units;
+  }
+}
+
 /**
  * Wallet affordance for the checkout page.
  *
@@ -89,7 +102,18 @@ export default function PayPanel({
   const [connecting, setConnecting] = useState(false);
   const [paying, setPaying] = useState(false);
   const [tokenIn, setTokenIn] = useState("");
-  const [quote, setQuote] = useState<null | { ok: true; amountIn: string; amountInMax: string; hop: string; path: string[]; pathEvm: `0x${string}`[]; slippageBps: string; tokenIn?: { symbol: string; decimals: number } | null } | { ok: false; error: string }>(null);
+  const [quote, setQuote] = useState<null | {
+    ok: true;
+    amountIn: string;
+    amountInMax: string;
+    amountOut?: string;
+    hop: string;
+    path: string[];
+    pathEvm: `0x${string}`[];
+    slippageBps: string;
+    tokenIn?: { symbol: string; decimals: number } | null;
+    tokenOut?: { symbol: string; decimals: number } | null;
+  } | { ok: false; error: string }>(null);
   const [quoting, setQuoting] = useState(false);
 
   useEffect(() => {
@@ -328,9 +352,14 @@ export default function PayPanel({
               {quoting ? <p className="mt-2 text-xs text-zinc-500">Quoting SaucerSwap…</p> : null}
               {quote && quote.ok ? (
                 <p className="mt-2 text-xs text-zinc-300">
-                  Path: <code className="mono">{quote.path.join(" → ")}</code> ({quote.hop}). You pay at most{" "}
-                  <code className="mono">{quote.amountInMax}</code> base units ({quote.slippageBps} bps slippage). The
-                  merchant still receives the invoice amount exactly.
+                  You pay at most{" "}
+                  <strong className="text-zinc-100">
+                    {humanAmount(quote.amountInMax, quote.tokenIn?.decimals)} {quote.tokenIn?.symbol || "tokenIn"}
+                  </strong>
+                  . The merchant still receives the invoice amount exactly (
+                  {humanAmount(quote.amountOut ?? amount, quote.tokenOut?.decimals)} {quote.tokenOut?.symbol || "invoice token"}
+                  ). Path: <code className="mono">{quote.path.join(" → ")}</code> ({quote.hop}, {quote.slippageBps} bps
+                  slippage). No pool → this button stays disabled.
                 </p>
               ) : null}
               {quote && !quote.ok ? (

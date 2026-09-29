@@ -128,7 +128,7 @@ yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443
 ```
 
 Same data in the browser (this app, no HashScan login): `/receipt?topic=0.0.10541151&id=INV-MU1G1FSW443`
-(topic on HashScan: https://hashscan.io/testnet/topic/0.0.10541151)
+or `/receipt/INV-MU1G1FSW443` (topic on HashScan: https://hashscan.io/testnet/topic/0.0.10541151)
 
 ![HCS receipt reconstructed without the gateway database](docs/images/receipt-hcs.png)
 
@@ -146,6 +146,18 @@ It does **not** clone the eight official `scaffold-hbar` templates (`blank`, `he
 `x402-pay-per-use`). A checkout that only settles the invoice token, or stamps HCS
 *after* the fact as an optional API, is a different (weaker) pattern: here the DEX
 quote is load-bearing, the swap is the settlement, and HCS is readable without us.
+
+Public bounty templates in a nearby lane (checked 29.09.2026, GitHub — not the closed
+submission list):
+
+| Template | Pattern | This repo |
+|---|---|---|
+| Official `payments-scheduler` | HIP-1215 cron payments | HSS is only used to **expire** an unpaid invoice |
+| Official `x402-pay-per-use` | pay-per-request API | Invoice + hosted checkout, not an API 402 |
+| `BikramBiswas786/saucerpay` | Invoice **escrow**, merchant **withdraws** | **No escrow.** Payer → merchant in the same transaction. The registry balance must be zero at the end of the tx |
+| `ameros67/supra-hbar-checkout` | USD invoice priced by an **oracle**, paid in HBAR | Price is a **SaucerSwap pool quote**; settlement is the swap, not a number from a feed |
+
+Shareable reconstruct URL: `/receipt/INV-…` (same data as `/receipt?id=`). Agents: `GET /api/agent/manifest` and `llms.txt`.
 
 ## Tests
 

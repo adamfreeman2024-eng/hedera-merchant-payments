@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
 import { config, hasDatabase, hasHcsTopic, hasMerchant, hasRegistry } from "@/lib/config";
+import { corsPreflight, jsonCors } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
+
+export function OPTIONS() {
+  return corsPreflight();
+}
 
 /**
  * Health/readiness for operators and the harness. Never throws: reports `ok: false`
@@ -15,7 +19,7 @@ export async function GET() {
     hcsReceipts: hasHcsTopic(),
   };
   const ready = Object.values(checks).every(Boolean);
-  return NextResponse.json({
+  return jsonCors({
     ok: true,
     ready,
     network: config.network,

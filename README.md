@@ -32,7 +32,7 @@ That is what this template ships.
 | Pay in an HTS token (e.g. testnet USDC) | **atomic on-chain settlement**: `approve` (HIP-336) then the registry calls `HTS.transferFrom(payer → merchant)` inside the same transaction |
 | Pay in **any other HTS token** | **SaucerSwap V1** `swapTokensForExactTokens` in the same transaction (`payInvoiceWithSwap`). Merchant receives **exactly** the invoice amount. Leftover `tokenIn` returns to the payer. Without the DEX this path does not exist — that is the load-bearing integration. |
 | Live any-token **quote** | `GET /api/quote` asks the SaucerSwap V1 factory for a pair (direct, or one hop through WHBAR), then `getAmountsIn`. Checkout **refuses to send** a swap tx until that quote exists. No pool → honest error, not a revert after the user signed. |
-| Verify settlement | Mirror Node polling worker matches transfers by memo + amount + merchant account |
+| Verify settlement | HBAR: Mirror Node matches memo + amount + merchant. Token/swap: worker also reads `InvoiceSettled` logs (contract calls have no memo). |
 | Tamper-evident receipts | every event appended to an **HCS** topic; the sequence number is stored with the invoice |
 | **Rebuild the ledger without our database** | `/receipt?topic=0.0.x` and `yarn reconstruct --topic 0.0.x` read the public Mirror Node only |
 | Merchant notification | **signed webhooks** (`sha256` HMAC of `timestamp.body`) with retries |
@@ -48,10 +48,11 @@ customer wallet ──HBAR transfer (memo HMP-INV…)─────────
                                                     (atomic hop; leftover tokenIn refunded)
 ```
 
-- Customer funds move **payer → merchant**. They never touch the gateway, the operator
-  account, or the contract.
-- `InvoiceRegistry` stores terms and status only — it has no function that can move tokens
-  to itself or to the operator.
+- Customer funds move **payer → merchant**. They are never held *across* transactions.
+  The SaucerSwap path may pull `tokenIn` into the registry **inside the same transaction**,
+  swap, pay the merchant, and refund leftover `tokenIn`. End-of-tx registry balances are zero.
+- `InvoiceRegistry` is not a custodian. It has no function that parks a customer balance
+  for later withdrawal (that is SaucerPay's escrow model, not this one).
 - The **operator** key (ECDSA) can create invoices and attest an *observed* HBAR settlement
   (recording the transaction id it saw on the Mirror Node). It cannot redirect funds and
   cannot settle a token invoice — that path is atomic and only ever pays the merchant
@@ -68,7 +69,7 @@ customer wallet ──HBAR transfer (memo HMP-INV…)─────────
 | **SaucerSwap V1 (ecosystem)** | load-bearing DEX: `payInvoiceWithSwap` quotes one asset, accepts another. Testnet router `0.0.19264`, mainnet `0.0.3045981`. If a pair has no testnet pool, document a forked-mainnet / read-only quote as the brief allows. |
 | **Consensus Service (HCS)** | settlement/expiry/cancel receipts (`TopicMessageSubmitTransaction`) |
 | **Smart Contracts** | `InvoiceRegistry` invoice ledger (OpenZeppelin `Ownable` for key rotation) |
-| **Mirror Node REST** | reconciliation of native HBAR transfers by memo, amount and destination |
+| **Mirror Node REST** | HBAR reconciliation by memo + amount + destination; token/swap settlement via registry `InvoiceSettled` logs |
 | **Scheduled Transactions (HSS, `0x16b`)** | HIP-1215 `scheduleCall`: `scheduleExpire(id)` queues `expireInvoice` at the deadline so expiry needs no worker. HSS does not revert — we check response code 22. |
 
 ## Architecture
@@ -187,9 +188,9 @@ Verified locally (commands and results, not claims):
 | Contract behaviour | `yarn hardhat:test` | ✅ **16 passing** (lifecycle, HTS/SaucerSwap, HIP-1215 scheduleExpire, attest records the real payer) |
 | Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **24 passing** (30.09.2026: units, memo, state machine, webhooks, entity→EVM, SaucerSwap path/quote, HCS reconstruct, HTS decimals not defaulted to 2) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ 18.09.2026: scaffolds, outro renders, `.env.example` includes `SAUCERSWAP_ROUTER` |
-| Fresh clone `yarn verify` | `git clone https://github.com/adamfreeman2024-eng/hedera-merchant-payments /tmp/hmp-fresh && cd /tmp/hmp-fresh && node .yarn/releases/yarn-3.2.3.cjs install && HEDERA_OPERATOR_KEY=0xac0974…ff80 yarn verify` | ✅ **23.09.2026** from public GitHub `53cb29a`: install **67.6s**, **exit 0** — tsc + **16** hardhat + **23** ledger. Same clone: `yarn next:build` 10 routes exit 0; `yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443` → `invoice.paid` |
+| Fresh clone `yarn verify` | public clone | ✅ **23.09.2026** SHA `53cb29a`: **16** hardhat + **23** ledger. **Not re-run after 30.09** (`d4abd48`, ledger now **24**). Reconstruct of `INV-MU1G1FSW443` → `invoice.paid` still holds. |
+| App build | `yarn next:build` | ✅ 30.09.2026: Next.js 15, routes include `/api/quote`, `/api/receipts`, `/api/agent/manifest`, `/receipt`, `/receipt/[invoiceId]` |
 | Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, **10-assertion** acceptance contract C1–C10) | ✅ 23.09.2026: seed repo `adamfreeman2024-eng/hedera-merchant-payments`; required `LICENSE` (not `LICENCE`); C9 `/api/quote`, C10 `/receipt` reconstruct; smoke hits `/receipt` + `/api/health` |
-| App build | `yarn next:build` | ✅ 23.09.2026: Next.js 15, 10 routes (`/api/quote`, `/api/receipts`, `/receipt` included) |
 | App read path with **no configuration at all** | `next start` with every env var unset | ✅ dashboard renders with setup guidance, `/new` 200, `/api/health` lists what is missing, `POST /api/invoices` → clean 503 (no crash) |
 | Local end-to-end | Postgres + `yarn db:migrate` (`prisma migrate deploy`) + app | ✅ create → list → checkout page → invalid amount 400 → cancel |
 | **Testnet end-to-end (chain 296)** | app + worker, real HBAR | ✅ see below |
@@ -237,7 +238,7 @@ Earlier HBAR checkout evidence (14.09.2026, previous registry `0xc978548F1c4606C
 - **Multiple merchants per deployment** is not in this template.
 
 - [x] `InvoiceRegistry` with atomic HTS settlement + attested HBAR settlement (payer recorded, not the operator)
-- [x] SaucerSwap V1 any-token settlement (`payInvoiceWithSwap`) — unit tests **and** live testnet SETTLED `0.0.7314364-1789748240-167185116`
+- [x] SaucerSwap V1 any-token settlement (`payInvoiceWithSwap`) — unit tests **and** live exact-out SETTLED `0.0.7314364-1790759796-358673356` on registry `0.0.10789245` (pre-fix exact-in: `0.0.7314364-1789748240-167185116`)
 - [x] Ledger domain rules (units, memo, state machine, webhook signing) with unit tests
 - [x] HCS receipt writer (submit + sequence capture) — exercised on testnet topic `0.0.10541151`
 - [x] Next.js dashboard + hosted checkout (one-click HTS + SaucerSwap paths)
@@ -256,5 +257,5 @@ Licence: MIT.
 - [ ] `.github/workflows/ci.yaml` is committed. It is ignored right now because the
       GitHub token in use has no `workflow` scope; run `gh auth refresh -s workflow`
       and then `git add -f .github/workflows/ci.yaml && git commit -m "ci: add workflow"`.
-- [x] README status table matches the latest local runs (23.09.2026).
+- [x] README status table matches the latest local runs (30.09.2026, `d4abd48`).
 - [x] No secrets in the tree besides Hardhat account #0 (named `HARDHAT_DEV_KEY`).

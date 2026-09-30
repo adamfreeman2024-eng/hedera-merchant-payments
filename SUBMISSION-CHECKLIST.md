@@ -27,7 +27,7 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
       ```bash
       npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
       ```
-      Fresh `git clone` of the public repo + `yarn verify` was re-run **23.09.2026** (exit 0, 16 hardhat + 23 ledger). The `npx create-scaffold-hbar` path itself was last proven 21.09.2026 (outro renders).
+      Fresh `git clone` of the public repo + `yarn verify` was last fully re-run **23.09.2026** (16 hardhat + 23 ledger). HEAD is now `d4abd48` (24 ledger tests, exact-out registry `0.0.10789245`).
 
 ## Gate items and their evidence
 
@@ -40,9 +40,9 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 | No secrets / `.env` committed | ✅ | `git ls-files` clean; `.env*` gitignored |
 | Fresh install works | ✅ 23.09.2026 | public clone `53cb29a`, vendored Yarn 3.2.3, install 67.6s |
 | Build passes | ✅ 23.09.2026 | `yarn verify` exit 0 + `yarn next:build` 10 routes on that clone |
-| Tests pass | ✅ 23.09.2026 | **16** hardhat + **23** ledger on the public clone |
+| Tests pass | ✅ 30.09.2026 | **16** hardhat + **24** ledger on working tree `d4abd48` (fresh-clone 23.09 was 16+23) |
 | ≥1 Hedera service | ✅ | HTS `0x167` (HIP-336), HCS receipts, HSS `0x16b` (HIP-1215), SaucerSwap V1 quote+swap |
-| **Real testnet transaction / HashScan** | ✅ | `payInvoiceWithSwap` SETTLED `0.0.7314364-1789748240-167185116` |
+| **Real testnet transaction / HashScan** | ✅ | exact-out SETTLED `0.0.7314364-1790759796-358673356` on `0.0.10789245` |
 | Live quote (no keys) | ✅ 23.09 | `GET /api/quote` 1 SAUCE ← 1819520 WHBAR tinybar |
 | HCS reconstruct (no DB) | ✅ 23.09 | `yarn reconstruct --topic 0.0.10541151` → `INV-MU1G1FSW443` paid |
 | Original code | ✅ | clean-room; no other submission's code |
@@ -51,9 +51,10 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 
 ## Testnet evidence (publicly verifiable, no keys needed)
 
-- InvoiceRegistry `0.0.10600857` — <https://hashscan.io/testnet/contract/0.0.10600857>
-- Live `payInvoiceWithSwap` (SAUCE → WHBAR, invoice SETTLED):
-  `0.0.7314364-1789748240-167185116`
+- InvoiceRegistry **current** `0.0.10789245` — <https://hashscan.io/testnet/contract/0.0.10789245>
+- Live exact-out `payInvoiceWithSwap` SETTLED:
+  `0.0.7314364-1790759796-358673356`
+- Previous exact-in (pre-fix) `0.0.10600857` / `0.0.7314364-1789748240-167185116`
 - HIP-1215 `scheduleExpire`: `0.0.7314364-1789727671-967513663`
 - SaucerSwap V1 testnet factory `0.0.9959`, SAUCE/WHBAR pair
   `0xfE7CC3cEb7b1128bfC3889184E2d5561BF74bfb3`

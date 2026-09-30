@@ -203,8 +203,8 @@ contract InvoiceRegistry is Ownable {
      * a zero balance of both tokens after the call (no lingering custody).
      *
      * `path[0]` is the token the payer holds. `path[last]` MUST be `inv.token`.
-     * `amountInMax` is the most the payer will spend; `amountOutMin` is the
-     * invoice amount.
+     * `amountInMax` is the most the payer will spend. The merchant receives
+     * exactly `inv.amount` (SaucerSwap `swapTokensForExactTokens`, not exact-in).
      */
     function payInvoiceWithSwap(
         bytes32 id,
@@ -230,9 +230,9 @@ contract InvoiceRegistry is Ownable {
         bool ok = IERC20Minimal(tokenIn).approve(saucerRouter, amountInMax);
         if (!ok) revert TokenTransferFailed(0);
 
-        uint256[] memory amounts = ISaucerRouterV1(saucerRouter).swapExactTokensForTokens(
-            amountInMax,
+        uint256[] memory amounts = ISaucerRouterV1(saucerRouter).swapTokensForExactTokens(
             inv.amount,
+            amountInMax,
             path,
             inv.merchant,
             deadline

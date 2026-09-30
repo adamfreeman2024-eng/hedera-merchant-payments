@@ -7,6 +7,7 @@
  *   yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443
  */
 import { reconstructTopic } from "./reconstruct.js";
+import { formatTokenAmount } from "./money.js";
 import { mirrorNodeUrl } from "./hcs.js";
 
 function arg(flag: string): string | undefined {
@@ -34,6 +35,10 @@ const fetchJson = async (url: string) => {
 reconstructTopic(mirror, topic, fetchJson)
   .then((report) => {
     const rows = invoice ? (report.latest[invoice] ? [report.latest[invoice]] : []) : Object.values(report.latest);
+    const display = rows.map((r) => ({
+      ...r,
+      amountDisplay: formatTokenAmount(r.amount, r.token),
+    }));
     console.log(
       JSON.stringify(
         {
@@ -41,8 +46,8 @@ reconstructTopic(mirror, topic, fetchJson)
           mirror,
           messagesSeen: report.messagesSeen,
           skipped: report.skipped,
-          invoices: rows.length,
-          latest: invoice ? report.latest[invoice] ?? null : report.latest,
+          invoices: display.length,
+          latest: invoice ? display[0] ?? null : Object.fromEntries(display.map((r) => [r.invoiceId, r])),
         },
         null,
         2

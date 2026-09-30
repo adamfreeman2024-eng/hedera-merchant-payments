@@ -14,6 +14,15 @@ interface ISaucerRouterV1 {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts);
+
+    /// Exact-out: merchant receives `amountOut`, payer spends at most `amountInMax`.
+    function swapTokensForExactTokens(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
 }
 
 interface IERC20Minimal {

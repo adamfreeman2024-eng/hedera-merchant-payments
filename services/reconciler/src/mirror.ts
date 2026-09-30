@@ -123,4 +123,45 @@ export class MirrorNodeClient {
     const data = (await res.json()) as { evm_address?: string | null };
     return data.evm_address ?? null;
   }
+
+  /**
+   * InvoiceSettled logs on the registry. Contract-call payments have no memo,
+   * so this is the only way the worker learns they settled.
+   */
+  async contractLogs(
+    contractId: string,
+    opts: { since?: number; limit?: number } = {},
+  ): Promise<
+    Array<{
+      data: string;
+      topics: string[];
+      timestamp?: string;
+      transaction_id?: string;
+      transaction_hash?: string;
+    }>
+  > {
+    const limit = opts.limit ?? 100;
+    const params = new URLSearchParams({ limit: String(limit), order: "asc" });
+    if (opts.since) params.set("timestamp", `gte:${(opts.since / 1000).toFixed(9)}`);
+    const url = `${this.base}/api/v1/contracts/${contractId}/results/logs?${params.toString()}`;
+    const res = await this.fetchImpl(url, { signal: AbortSignal.timeout(20_000) });
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`Mirror Node ${res.status} for ${url}`);
+    const page = (await res.json()) as {
+      logs?: Array<{
+        data?: string;
+        topics?: string[];
+        timestamp?: string;
+        transaction_id?: string;
+        transaction_hash?: string;
+      }>;
+    };
+    return (page.logs ?? []).map((l) => ({
+      data: l.data || "0x",
+      topics: l.topics ?? [],
+      timestamp: l.timestamp,
+      transaction_id: l.transaction_id,
+      transaction_hash: l.transaction_hash,
+    }));
+  }
 }

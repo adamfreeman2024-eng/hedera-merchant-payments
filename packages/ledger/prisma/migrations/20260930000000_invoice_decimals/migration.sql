@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Invoice" ADD COLUMN "decimals" INTEGER NOT NULL DEFAULT 8;

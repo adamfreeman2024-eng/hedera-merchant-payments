@@ -30,7 +30,7 @@ That is what this template ships.
 | Hosted checkout page | `/pay/[invoiceId]` — QR + one-click pay |
 | Pay in HBAR | native `CryptoTransfer` with the invoice memo `HMP-<ID>` |
 | Pay in an HTS token (e.g. testnet USDC) | **atomic on-chain settlement**: `approve` (HIP-336) then the registry calls `HTS.transferFrom(payer → merchant)` inside the same transaction |
-| Pay in **any other HTS token** | **SaucerSwap V1** `swapExactTokensForTokens` in the same transaction (`payInvoiceWithSwap`). Merchant still receives the invoice token. Without the DEX this path does not exist — that is the load-bearing integration. |
+| Pay in **any other HTS token** | **SaucerSwap V1** `swapTokensForExactTokens` in the same transaction (`payInvoiceWithSwap`). Merchant receives **exactly** the invoice amount. Leftover `tokenIn` returns to the payer. Without the DEX this path does not exist — that is the load-bearing integration. |
 | Live any-token **quote** | `GET /api/quote` asks the SaucerSwap V1 factory for a pair (direct, or one hop through WHBAR), then `getAmountsIn`. Checkout **refuses to send** a swap tx until that quote exists. No pool → honest error, not a revert after the user signed. |
 | Verify settlement | Mirror Node polling worker matches transfers by memo + amount + merchant account |
 | Tamper-evident receipts | every event appended to an **HCS** topic; the sequence number is stored with the invoice |
@@ -185,13 +185,13 @@ Verified locally (commands and results, not claims):
 |---|---|---|
 | Contract compiles | `yarn hardhat:compile` | ✅ 3 files, solc 0.8.28, evm target `paris` |
 | Contract behaviour | `yarn hardhat:test` | ✅ **16 passing** (lifecycle, HTS/SaucerSwap, HIP-1215 scheduleExpire, attest records the real payer) |
-| Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **23 passing** (23.09.2026 working tree: units, memo, state machine, webhooks, entity→EVM, SaucerSwap path/quote, HCS reconstruct) |
+| Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **24 passing** (30.09.2026: units, memo, state machine, webhooks, entity→EVM, SaucerSwap path/quote, HCS reconstruct, HTS decimals not defaulted to 2) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ 18.09.2026: scaffolds, outro renders, `.env.example` includes `SAUCERSWAP_ROUTER` |
 | Fresh clone `yarn verify` | `git clone https://github.com/adamfreeman2024-eng/hedera-merchant-payments /tmp/hmp-fresh && cd /tmp/hmp-fresh && node .yarn/releases/yarn-3.2.3.cjs install && HEDERA_OPERATOR_KEY=0xac0974…ff80 yarn verify` | ✅ **23.09.2026** from public GitHub `53cb29a`: install **67.6s**, **exit 0** — tsc + **16** hardhat + **23** ledger. Same clone: `yarn next:build` 10 routes exit 0; `yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443` → `invoice.paid` |
 | Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, **10-assertion** acceptance contract C1–C10) | ✅ 23.09.2026: seed repo `adamfreeman2024-eng/hedera-merchant-payments`; required `LICENSE` (not `LICENCE`); C9 `/api/quote`, C10 `/receipt` reconstruct; smoke hits `/receipt` + `/api/health` |
 | App build | `yarn next:build` | ✅ 23.09.2026: Next.js 15, 10 routes (`/api/quote`, `/api/receipts`, `/receipt` included) |
 | App read path with **no configuration at all** | `next start` with every env var unset | ✅ dashboard renders with setup guidance, `/new` 200, `/api/health` lists what is missing, `POST /api/invoices` → clean 503 (no crash) |
-| Local end-to-end | docker Postgres + `prisma migrate dev` + app | ✅ create → list → checkout page → invalid amount 400 → cancel |
+| Local end-to-end | Postgres + `yarn db:migrate` (`prisma migrate deploy`) + app | ✅ create → list → checkout page → invalid amount 400 → cancel |
 | **Testnet end-to-end (chain 296)** | app + worker, real HBAR | ✅ see below |
 
 ### Testnet evidence (publicly verifiable, no keys needed)

@@ -26,6 +26,7 @@ coverage/
 
 # local data
 *.log
+*.tsbuildinfo
 .DS_Store
 tmp/
 packages/hardhat/deployments/localhost/

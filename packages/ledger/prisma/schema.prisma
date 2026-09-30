@@ -18,6 +18,7 @@ model Invoice {
   token           String // "HBAR" or an HTS token id
   tokenEvmAddress String? // 0x… for the HTS contract path
   amount          Decimal       @db.Decimal(30, 0) // tinybar / base units
+  decimals        Int           @default(8) // 8 HBAR/WHBAR; Mirror decimals for HTS
   memo            String // payment memo customers must include
   status          InvoiceStatus @default(OPEN)
   expiresAt       DateTime

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { reconstructTopic } from "@hmp/ledger";
+import { reconstructTopic, formatTokenAmount } from "@hmp/ledger";
 import { explorerTopic, explorerTransaction, mirrorBase, publicConfig } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
@@ -89,7 +89,7 @@ export default async function ReceiptPage({ searchParams }: Props) {
             <div>
               <span className="text-zinc-400">amount · token: </span>
               <span className="mono">
-                {r.amount} {r.token}
+                {formatTokenAmount(r.amount, r.token)} {r.token}
               </span>
             </div>
             <div>

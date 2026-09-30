@@ -39,6 +39,52 @@ export const toTinybar = (hbar: string | number) => toBaseUnits(hbar, 8);
 export const fromTinybar = (tinybar: bigint) => fromBaseUnits(tinybar, 8);
 
 /**
+ * Display decimals. HBAR is always 8. A few well-known testnet HTS ids are listed
+ * so receipts can render without a Mirror round-trip. Anything else must be
+ * fetched (see `fetchTokenDecimals`) — never default HTS to 2.
+ */
+export const KNOWN_TOKEN_DECIMALS: Record<string, number> = {
+  HBAR: 8,
+  "0.0.15058": 8, // WHBAR testnet
+  "0.0.1183558": 6, // SAUCE testnet
+};
+
+export function decimalsForToken(token: string, stored?: number | null): number | null {
+  if (stored != null && Number.isInteger(stored) && stored >= 0 && stored <= 18) return stored;
+  if (token === "HBAR") return 8;
+  return KNOWN_TOKEN_DECIMALS[token] ?? null;
+}
+
+export function formatTokenAmount(units: string | bigint, token: string, stored?: number | null): string {
+  const decimals = decimalsForToken(token, stored);
+  let raw: bigint;
+  try {
+    raw = typeof units === "bigint" ? units : BigInt(units);
+  } catch {
+    return String(units);
+  }
+  if (decimals == null) return `${raw.toString()} base units`;
+  return fromBaseUnits(raw, decimals);
+}
+
+export async function fetchTokenDecimals(
+  token: string,
+  fetchJson: (url: string) => Promise<{ decimals?: string | number }>,
+  mirrorBase: string,
+): Promise<number> {
+  if (token === "HBAR") return 8;
+  const known = KNOWN_TOKEN_DECIMALS[token];
+  if (!/^0\.0\.\d+$/.test(token)) throw new AmountError(`Invalid token id: ${token}`);
+  const res = await fetchJson(`${mirrorBase.replace(/\/$/, "")}/api/v1/tokens/${token}`);
+  const n = Number(res.decimals);
+  if (!Number.isInteger(n) || n < 0 || n > 18) {
+    if (known != null) return known;
+    throw new AmountError(`Mirror Node did not return decimals for ${token}`);
+  }
+  return n;
+}
+
+/**
  * Payment memo attached to every customer transfer. The reconciler matches a
  * Mirror Node transfer to an invoice ONLY when the memo matches exactly, so the
  * format is intentionally strict and short (Hedera memos are capped at 100 bytes).

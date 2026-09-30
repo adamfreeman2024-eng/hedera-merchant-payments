@@ -40,7 +40,7 @@ contract MockERC20 {
     }
 }
 
-/// @dev UniswapV2-style mock: pull `amountIn` of path[0], push `amountOutMin` of path[last] to `to`.
+/// @dev UniswapV2-style mock. Exact-out spends less than amountInMax so leftover refund can be tested.
 contract MockSaucerRouter {
     function swapExactTokensForTokens(
         uint256 amountIn,
@@ -55,6 +55,24 @@ contract MockSaucerRouter {
         amounts = new uint256[](path.length);
         amounts[0] = amountIn;
         amounts[path.length - 1] = amountOutMin;
+    }
+
+    function swapTokensForExactTokens(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 /* deadline */
+    ) external returns (uint256[] memory amounts) {
+        require(path.length >= 2, "path");
+        require(amountInMax >= amountOut, "in");
+        // Spend less than max when we can, so the registry leftover-refund path runs.
+        uint256 used = amountInMax > 10 ? amountInMax - 10 : amountInMax;
+        MockERC20(path[0]).transferFrom(msg.sender, address(this), used);
+        MockERC20(path[path.length - 1]).mint(to, amountOut);
+        amounts = new uint256[](path.length);
+        amounts[0] = used;
+        amounts[path.length - 1] = amountOut;
     }
 }
 

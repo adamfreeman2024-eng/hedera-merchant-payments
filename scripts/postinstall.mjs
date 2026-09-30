@@ -8,7 +8,7 @@
  * This keeps `npm install` and `yarn install` both working out of the box.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const schema = resolve("packages/ledger/prisma/schema.prisma");
@@ -36,4 +36,20 @@ try {
 } catch (error) {
   console.warn("[postinstall] prisma generate failed:", error.message);
   console.warn("[postinstall] run `yarn db:generate` after fixing the schema");
+}
+
+// Yarn workspaces (nmHoistingLimits) keep the query engine next to @hmp/ledger.
+// Next.js resolves @prisma/client from the nextjs workspace — copy the engine there.
+const engineSrc = resolve("packages/ledger/node_modules/.prisma");
+const engineDestDir = resolve("packages/nextjs/node_modules");
+const engineDest = resolve(engineDestDir, ".prisma");
+if (existsSync(engineSrc)) {
+  mkdirSync(engineDestDir, { recursive: true });
+  cpSync(engineSrc, engineDest, { recursive: true });
+}
+const clientSrc = resolve("packages/ledger/node_modules/@prisma/client");
+const clientDest = resolve(engineDestDir, "@prisma/client");
+if (existsSync(clientSrc) && !existsSync(clientDest)) {
+  mkdirSync(resolve(engineDestDir, "@prisma"), { recursive: true });
+  cpSync(clientSrc, clientDest, { recursive: true });
 }

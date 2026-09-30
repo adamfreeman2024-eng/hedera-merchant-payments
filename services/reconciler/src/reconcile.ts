@@ -30,6 +30,10 @@ import {
   type MirrorTransaction,
 } from "./mirror.js";
 
+const SETTLED_IFACE = new Interface([
+  "event InvoiceSettled(bytes32 indexed id, address indexed payer, address token, uint256 amount, bytes32 settlementRef, bool viaContract)",
+]);
+
 const REGISTRY_ABI = [
   "function createInvoice(bytes32 id, address merchant, address token, uint256 amount, uint64 expiresAt, string memo) external",
   "function attestHbarSettlement(bytes32 id, bytes32 hederaTxRef, address payer) external",
@@ -232,9 +236,18 @@ export class Reconciler {
       }
     }
 
+    // 1b. HTS / swap payments are contract calls — no CryptoTransfer memo.
+    // Watch InvoiceSettled(viaContract=true) on the registry.
+    try {
+      await this.settleFromContractEvents(summary, since, opts);
+    } catch (error) {
+      summary.errors.push(`contract events: ${(error as Error).message}`);
+    }
+
     // 2. expire stale invoices
     for (const invoice of open) {
       if (invoice.status !== "OPEN") continue;
+      if (summary.settled.some((id) => id === invoice.id || id.startsWith(`${invoice.id} `))) continue;
       if (invoice.expiresAt.getTime() > now.getTime()) continue;
       if (opts.dryRun) {
         summary.expired.push(`${invoice.id} [dry-run]`);
@@ -271,6 +284,56 @@ export class Reconciler {
     }
 
     return summary;
+  }
+
+  /**
+   * HTS / swap settlement has no CryptoTransfer memo. Match InvoiceSettled
+   * logs (viaContract=true) to still-OPEN invoices by on-chain chainId.
+   */
+  async settleFromContractEvents(
+    summary: ReconcileSummary,
+    since: number,
+    opts: ReconcileOptions,
+  ) {
+    if (!this.env.registryAddress) return;
+    const stillOpen = await this.prisma.invoice.findMany({ where: { status: "OPEN" } });
+    const tokenOpen = stillOpen.filter((i) => i.token !== "HBAR");
+    if (!tokenOpen.length) return;
+
+    const byChainId = new Map<string, (typeof tokenOpen)[number]>();
+    for (const invoice of tokenOpen) {
+      byChainId.set(chainIdOf(invoice.id).toLowerCase(), invoice);
+    }
+
+    const logs = await this.mirror.contractLogs(this.env.registryAddress, { since, limit: 100 });
+    for (const log of logs) {
+      let parsed: ReturnType<typeof SETTLED_IFACE.parseLog>;
+      try {
+        parsed = SETTLED_IFACE.parseLog({ topics: log.topics as `0x${string}`[], data: log.data });
+      } catch {
+        continue;
+      }
+      if (!parsed || parsed.name !== "InvoiceSettled") continue;
+      if (!parsed.args.viaContract) continue;
+      const idHex = String(parsed.args.id).toLowerCase();
+      const invoice = byChainId.get(idHex);
+      if (!invoice || invoice.status !== "OPEN") continue;
+      summary.matched.push(invoice.id);
+      const txId = log.transaction_id || log.transaction_hash || "";
+      const when = log.timestamp ? consensusMillis(log.timestamp) : Date.now();
+      if (opts.dryRun) {
+        summary.settled.push(`${invoice.id} [dry-run]`);
+        continue;
+      }
+      await this.settle(invoice, {
+        payer: parsed.args.payer ? String(parsed.args.payer) : null,
+        txId,
+        consensusAt: when,
+      });
+      invoice.status = "SETTLED";
+      summary.settled.push(invoice.id);
+      if (this.env.hcsTopicId) summary.receipts += 1;
+    }
   }
 
   /**

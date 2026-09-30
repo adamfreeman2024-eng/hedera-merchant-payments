@@ -4,7 +4,9 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": { "hmp-reconciler": "dist/cli.js" },
+  "bin": {
+    "hmp-reconciler": "dist/cli.js"
+  },
   "scripts": {
     "dev": "tsx watch src/cli.ts",
     "once": "tsx src/cli.ts --once",
@@ -13,8 +15,8 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@hmp/ledger": "*",
     "@hashgraph/sdk": "^2.81.0",
+    "@hmp/ledger": "*",
     "ethers": "^6.13.2"
   },
   "devDependencies": {

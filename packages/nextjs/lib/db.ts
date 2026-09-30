@@ -34,6 +34,6 @@ export async function withDb<T>(run: (db: PrismaClient) => Promise<T>): Promise<
   try {
     return { ok: true, data: await run(db) };
   } catch (error) {
-    return { ok: false, reason: error instanceof Error ? error.message.split("\n")[0] : "database error" };
+    return { ok: false, reason: error instanceof Error ? error.message : "database error" };
   }
 }

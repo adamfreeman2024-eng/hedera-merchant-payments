@@ -9,6 +9,8 @@ import {
   settlementMatches,
   toBaseUnits,
   toTinybar,
+  decimalsForToken,
+  formatTokenAmount,
 } from "../src/money.js";
 import {
   InvoiceRuleError,
@@ -39,6 +41,16 @@ describe("money", () => {
     assert.equal(fromBaseUnits(1_500_000n, 8), "0.015");
     assert.equal(fromBaseUnits(0n, 8), "0");
     assert.equal(fromBaseUnits(toBaseUnits("42.42", 2), 2), "42.42");
+  });
+
+  it("does not default HTS decimals to 2", () => {
+    assert.equal(decimalsForToken("HBAR"), 8);
+    assert.equal(decimalsForToken("0.0.15058"), 8);
+    assert.equal(decimalsForToken("0.0.1183558"), 6);
+    assert.equal(decimalsForToken("0.0.99999999"), null);
+    assert.equal(formatTokenAmount("25000000", "HBAR"), "0.25");
+    assert.equal(formatTokenAmount("1000000", "0.0.1183558"), "1");
+    assert.match(formatTokenAmount("99", "0.0.1"), /base units/);
   });
 
   it("builds and parses the strict payment memo", () => {

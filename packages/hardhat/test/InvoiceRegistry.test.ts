@@ -217,6 +217,8 @@ describe("InvoiceRegistry", () => {
       expect((await registry.getInvoice(id)).status).to.equal(2n);
       expect(await tokenOut.balanceOf(merchant.address)).to.equal(50n);
       expect(await tokenIn.balanceOf(await registry.getAddress())).to.equal(0n);
+      // Mock spends amountInMax-10; leftover returns to the payer (exact-out).
+      expect(await tokenIn.balanceOf(payer.address)).to.equal(10n);
     });
 
     it("rejects a path that does not end in the invoice token", async () => {

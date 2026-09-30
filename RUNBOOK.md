@@ -11,7 +11,7 @@ Everything below is copy-paste; nothing is assumed.
 |---|---|---|
 | Node.js | ≥ 20.18.3 | `node -v` |
 | Yarn | any launcher (the repo ships Yarn 3.2.3 itself) | `yarn -v` |
-| Docker (for Postgres) | any recent | `docker compose version` |
+| Docker (optional, for local Postgres) | any recent | `docker compose version` |
 
 The repo vendors its package manager at `.yarn/releases/yarn-3.2.3.cjs`, so you and CI run
 the exact same Yarn. Without a global `yarn`: `node .yarn/releases/yarn-3.2.3.cjs install`.
@@ -59,8 +59,8 @@ WEBHOOK_SIGNING_SECRET=whsec_dev_local_change_me
 ## 3. Database
 
 ```bash
-yarn ledger:up        # starts Postgres 16 in docker (bound to 127.0.0.1 only)
-yarn db:migrate       # applies the committed migration + generates the Prisma client
+yarn ledger:up        # optional: Postgres 16 in docker (127.0.0.1). Any Postgres DATABASE_URL works.
+yarn db:migrate       # prisma migrate deploy + generates the Prisma client
 ```
 
 Verify:
@@ -88,7 +88,7 @@ the template). For a smoke test the same account is acceptable.
 
 ```bash
 yarn hardhat:compile
-yarn hardhat:test                 # 11 contract tests should pass
+yarn hardhat:test                 # 16 contract tests should pass
 yarn hardhat:deploy --network hederaTestnet
 ```
 
@@ -124,8 +124,10 @@ yarn reconciler:dev       # polls the Mirror Node every 5s
 1. Open `http://localhost:3000/new`, create an invoice for e.g. `0.5` HBAR, expiry 15 min.
 2. Open the checkout link `/pay/<invoiceId>`.
 3. **HBAR path** — send the shown amount to the merchant account with the memo
-   `HMP-<ID>` (the page offers a QR / HashPack link; a manual transfer from the Hedera
-   portal works too).
+   printed on the page. The memo is `HMP-` plus the invoice id **with hyphens
+   stripped** (e.g. invoice `INV-MU1G1FSW443` → memo `HMP-INVMU1G1FSW443`). A
+   QR / HashPack link is on the checkout page; a manual transfer from the Hedera
+   portal works too.
 4. **HTS path** — click *Pay with token*: the page first submits a HIP-336 `approve`
    for the registry, then calls `payInvoiceWithHts`. The transfer to the merchant and the
    status change happen in one transaction.
@@ -141,7 +143,10 @@ yarn reconciler:dev       # polls the Mirror Node every 5s
 | Symptom | Cause | Fix |
 |---|---|---|
 | `INSUFFICIENT_TX_FEE` on deploy | operator has no HBAR | fund via the faucet |
-| Invoice never settles (HBAR path) | memo missing/typo, amount mismatch, wrong destination | the memo must be exactly `HMP-<ID>`; the reconciler matches memo + amount + merchant |
+| Invoice never settles (HBAR path) | memo missing/typo, amount mismatch, wrong destination | memo is `HMP-` + invoice id without hyphens (`HMP-INVMU1G1FSW443`); reconciler matches memo + amount + merchant |
+| Invoice stays OPEN after token/swap pay | worker only used to match memos | run `yarn reconciler:once` — it now also reads `InvoiceSettled` logs on the registry |
+| `scheduleExpire` costs ~1.6 HBAR | HIP-1215 scheduleCall on testnet | expected; document it, do not treat as a failure |
+| `db:migrate` on a fresh clone | `prisma migrate dev` wants a name | `yarn db:migrate` is `prisma migrate deploy` (existing migrations only) |
 | `TokenTransferFailed(194)` on the HTS path | allowance missing or too small | re-approve for at least the invoice amount (HIP-336) |
 | `InvoiceNotOpen` | already settled/cancelled/expired | create a new invoice |
 | Webhook not delivered | endpoint down / wrong secret | check `WebhookDelivery.lastError`, replays run automatically |
@@ -168,3 +173,6 @@ yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443
 - [ ] Postgres backups enabled; `prisma migrate deploy` in CI
 - [ ] Alerting on: worker heartbeat, undelivered webhooks, unsettled invoices older than expiry
 - [ ] Merchant rotates the gateway operator key (`setOperator`) on staff changes
+
+`.github/workflows/ci.yaml` exists locally but is gitignored until the GitHub token
+has the `workflow` scope (`gh auth refresh -s workflow`).

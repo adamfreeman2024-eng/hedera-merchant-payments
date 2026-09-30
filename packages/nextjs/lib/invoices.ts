@@ -1,5 +1,5 @@
-import { fromBaseUnits, invoiceChainId, InvoiceStatus } from "@hmp/ledger";
-import { config, explorerTransaction, hasDatabase, hasHcsTopic } from "./config";
+import { decimalsForToken, fetchTokenDecimals, fromBaseUnits, invoiceChainId, InvoiceStatus } from "@hmp/ledger";
+import { config, explorerTransaction, hasDatabase, hasHcsTopic, mirrorBase } from "./config";
 import { withDb } from "./db";
 import { createInvoiceInDb } from "@hmp/ledger";
 import { cancelInvoiceInDb, getInvoiceById, listInvoices } from "@hmp/ledger";
@@ -27,13 +27,14 @@ export type InvoiceView = {
 };
 
 const decimalsFor = (token: string, tokenDecimals?: number | null) =>
-  token === "HBAR" ? 8 : (tokenDecimals ?? 2);
+  decimalsForToken(token, tokenDecimals) ?? 8;
 
 type Row = {
   id: string;
   status: string;
   amount: unknown;
   token: string;
+  decimals?: number | null;
   memo: string;
   merchantAccount: string;
   createdAt: Date;
@@ -47,7 +48,7 @@ type Row = {
 
 export function toView(row: Row): InvoiceView {
   const token = row.token;
-  const decimals = decimalsFor(token);
+  const decimals = decimalsFor(token, row.decimals);
   const raw = BigInt(String(row.amount));
   const expiredButOpen = row.status === "OPEN" && row.expiresAt.getTime() < Date.now();
   return {
@@ -109,11 +110,32 @@ export async function createInvoice(input: {
   }
 
   const token = input.token && input.token !== "HBAR" ? input.token : config.paymentTokenId || "HBAR";
+  let decimals = 8;
+  if (token !== "HBAR") {
+    try {
+      decimals = await fetchTokenDecimals(
+        token,
+        async (url) => {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Mirror HTTP ${res.status}`);
+          return res.json() as Promise<{ decimals?: string | number }>;
+        },
+        mirrorBase(),
+      );
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : `Could not read decimals for ${token}`,
+        status: 502,
+      };
+    }
+  }
   const result = await withDb((db) =>
     createInvoiceInDb(db, {
       merchantAccount: config.merchantAccountId,
       token,
       amount: input.amount,
+      decimals,
       ttlMinutes: input.ttlMinutes ?? config.defaultInvoiceTtlMinutes,
     })
   );

@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { createInvoiceRecord } from "./invoice.js";
-import { toBaseUnits } from "./money.js";
+import { AmountError, toBaseUnits } from "./money.js";
 
 /**
  * Persistence for invoices — one source of truth used by both the web app and the
@@ -28,7 +28,15 @@ export async function createInvoiceInDb(
   input: CreateInvoiceInput
 ): Promise<{ id: string; memo: string; amount: bigint; expiresAt: Date; chainId: string }> {
   const token = input.token || "HBAR";
-  const decimals = input.decimals ?? (token === "HBAR" ? 8 : 2);
+  const decimals =
+    input.decimals ??
+    (token === "HBAR"
+      ? 8
+      : (() => {
+          throw new AmountError(
+            `HTS token ${token} needs decimals from the Mirror Node — refusing the old default of 2`,
+          );
+        })());
   const id = input.id ?? newInvoiceId();
   const ttlMinutes = input.ttlMinutes ?? 30;
 
@@ -48,6 +56,7 @@ export async function createInvoiceInDb(
       merchantAccount: record.merchantAccount,
       token: record.token,
       amount: record.amount.toString(),
+      decimals,
       memo: record.memo,
       status: "OPEN",
       expiresAt: record.expiresAt,

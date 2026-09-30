@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["@prisma/client", "prisma"],
+  outputFileTracingIncludes: {
+    "/*": [
+      "../../node_modules/.prisma/client/**",
+      "../../packages/ledger/node_modules/.prisma/client/**",
+      "../../packages/ledger/node_modules/@prisma/client/**",
+    ],
+  },
   env: {
     NEXT_PUBLIC_HEDERA_NETWORK: process.env.NEXT_PUBLIC_HEDERA_NETWORK || process.env.HEDERA_NETWORK || "testnet",
   },

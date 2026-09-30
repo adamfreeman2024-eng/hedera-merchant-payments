@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hmp/ledger": "*",
     "@hashgraph/sdk": "^2.81.0",
+    "@hmp/ledger": "*",
     "@rainbow-me/rainbowkit": "^2.2.1",
     "@tanstack/react-query": "^5.62.7",
     "next": "^15.1.3",

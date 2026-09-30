@@ -7,6 +7,9 @@
   "deployedAt": "2026-09-30T07:54:16.991Z",
   "deployTxHash": "0x8086d7da3ca595c9e74472de3fd217ab9a9276f7fd113d8bd750c2f56d193465",
   "hederaContractId": "0.0.10789245",
+  "exactOutPayTx": "0.0.7314364-1790759796-358673356",
+  "exactOutPayHash": "0x9ede6d3fa7c43fe484a61337f8e1c727f8cdf62bb669d15b54ceb423399bfada",
+  "exactOutInvoiceWhbar": "2000000",
   "previousAddress": "0x7385E85823393A6e498e9cdb158C8300F9018F4b",
   "previousHederaContractId": "0.0.10600857",
   "note": "exact-out swapTokensForExactTokens after 0b8d16c"

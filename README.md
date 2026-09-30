@@ -196,7 +196,18 @@ Verified locally (commands and results, not claims):
 
 ### Testnet evidence (publicly verifiable, no keys needed)
 
-Current ABI (18.09.2026) — operator `0.0.9586920` / `0xE1B590d179a8dA38eAE3219aEd8b05fFa33741a1`:
+Current ABI (30.09.2026, exact-out) — operator `0.0.9586920` / `0xE1B590d179a8dA38eAE3219aEd8b05fFa33741a1`:
+
+| Artifact | Value |
+|---|---|
+| InvoiceRegistry **(current)** | `0x8fbBA8c76AB330851d15205E2deB2482A6FF147D` · Hedera `0.0.10789245` |
+| Deploy tx | `0x8086d7da3ca595c9e74472de3fd217ab9a9276f7fd113d8bd750c2f56d193465` |
+| SaucerSwap V1 router | `0.0.19264` (`0x…4b40`) set on this registry at deploy |
+| Live **exact-out** `payInvoiceWithSwap` (30.09.2026) | invoice **0.02 WHBAR exactly** · SAUCE in quoted `1104976` / max `1116025` (leftover returned) · registry SAUCE=0 WHBAR=0 · SETTLED · tx `0.0.7314364-1790759796-358673356` (`0x9ede6d3f…`) |
+| HashScan contract (current) | https://hashscan.io/testnet/contract/0.0.10789245 |
+| HashScan exact-out swap | https://hashscan.io/testnet/transaction/0.0.7314364-1790759796-358673356 |
+
+Previous ABI (18.09.2026, **exact-in / pre-fix**, still verifiable):
 
 | Artifact | Value |
 |---|---|

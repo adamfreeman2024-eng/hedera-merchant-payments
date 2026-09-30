@@ -23,6 +23,7 @@ const WHBAR_ID = "0.0.15058";
 
 const ROUTER_ABI = [
   "function getAmountsOut(uint256 amountIn, address[] path) view returns (uint256[])",
+  "function getAmountsIn(uint256 amountOut, address[] path) view returns (uint256[])",
   "function swapExactETHForTokens(uint256 amountOutMin, address[] path, address to, uint256 deadline) payable returns (uint256[])",
 ];
 const ERC20_ABI = [
@@ -84,10 +85,16 @@ async function main() {
   console.log("sauceBalance", sauceBal.toString());
   if (sauceBal === 0n) throw new Error("swap left 0 SAUCE — cannot payInvoiceWithSwap");
 
-  const payIn = sauceBal / 2n;
-  const outQuoted = await router.getAmountsOut(payIn, [SAUCE, WHBAR]);
-  const invoiceWhbar = outQuoted[1] - outQuoted[1] / 20n;
-  console.log("swap_pay_in_SAUCE", payIn.toString(), "invoice_WHBAR_min", invoiceWhbar.toString());
+  // Exact-out: merchant receives exactly 0.02 WHBAR (8 decimals).
+  const invoiceWhbar = 2_000_000n;
+  const needed = await router.getAmountsIn(invoiceWhbar, [SAUCE, WHBAR]);
+  const amountInMax = needed[0] + needed[0] / 100n; // 100 bps
+  if (amountInMax > sauceBal) throw new Error("not enough SAUCE for exact-out 0.02 WHBAR");
+  console.log("exact_out_WHBAR", invoiceWhbar.toString(), "sauce_in_quoted", needed[0].toString(), "amountInMax", amountInMax.toString());
+
+  const whbar = new ethers.Contract(WHBAR, ERC20_ABI, signer);
+  const sauceBefore = sauceBal;
+  const whbarBefore = await whbar.balanceOf(signer.address);
 
   const id = ethers.keccak256(ethers.toUtf8Bytes(`swap-pay-${Date.now()}`));
   const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 1800);
@@ -95,15 +102,22 @@ async function main() {
   await create.wait();
   console.log("createInvoice", create.hash);
 
-  const approve = await sauce.approve(registryAddr, payIn);
+  const approve = await sauce.approve(registryAddr, amountInMax);
   await approve.wait();
   console.log("approve", approve.hash);
 
-  const pay = await registry.payInvoiceWithSwap(id, payIn, [SAUCE, WHBAR], BigInt(Math.floor(Date.now() / 1000) + 600));
+  const pay = await registry.payInvoiceWithSwap(id, amountInMax, [SAUCE, WHBAR], BigInt(Math.floor(Date.now() / 1000) + 600));
   const payRec = await pay.wait();
   console.log("payInvoiceWithSwap", pay.hash, "status", payRec?.status);
   const inv = await registry.getInvoice(id);
+  const sauceAfter = await sauce.balanceOf(signer.address);
+  const whbarAfter = await whbar.balanceOf(signer.address);
+  const regSauce = await sauce.balanceOf(registryAddr);
+  const regWhbar = await whbar.balanceOf(registryAddr);
   console.log("invoiceStatus", inv.status.toString(), "payer", inv.payer);
+  console.log("merchant_WHBAR_delta", (whbarAfter - whbarBefore).toString(), "expected", invoiceWhbar.toString());
+  console.log("payer_SAUCE_spent", (sauceBefore - sauceAfter).toString(), "amountInMax", amountInMax.toString());
+  console.log("registry_SAUCE", regSauce.toString(), "registry_WHBAR", regWhbar.toString());
 }
 
 main().catch((e) => {

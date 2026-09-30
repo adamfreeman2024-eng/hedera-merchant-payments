@@ -38,9 +38,9 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 | README + `AGENTS.md` | ✅ | both at root |
 | MIT licence | ✅ | `LICENSE` (renamed from `LICENCE` for canonical detection) |
 | No secrets / `.env` committed | ✅ | `git ls-files` clean; `.env*` gitignored |
-| Fresh install works | ✅ 23.09.2026 | public clone `53cb29a`, vendored Yarn 3.2.3, install 67.6s |
-| Build passes | ✅ 23.09.2026 | `yarn verify` exit 0 + `yarn next:build` 10 routes on that clone |
-| Tests pass | ✅ 30.09.2026 | **16** hardhat + **24** ledger on working tree `d4abd48` (fresh-clone 23.09 was 16+23) |
+| Fresh install works | ✅ 30.09.2026 | public clone `821fae1`, vendored Yarn 3.2.3, install 86s |
+| Build passes | ✅ 30.09.2026 | `yarn verify` exit 0 on that clone |
+| Tests pass | ✅ 30.09.2026 | **16** hardhat + **24** ledger on fresh clone `821fae1` |
 | ≥1 Hedera service | ✅ | HTS `0x167` (HIP-336), HCS receipts, HSS `0x16b` (HIP-1215), SaucerSwap V1 quote+swap |
 | **Real testnet transaction / HashScan** | ✅ | exact-out SETTLED `0.0.7314364-1790759796-358673356` on `0.0.10789245` |
 | Live quote (no keys) | ✅ 23.09 | `GET /api/quote` 1 SAUCE ← 1819520 WHBAR tinybar |

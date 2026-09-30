@@ -188,7 +188,7 @@ Verified locally (commands and results, not claims):
 | Contract behaviour | `yarn hardhat:test` | ✅ **16 passing** (lifecycle, HTS/SaucerSwap, HIP-1215 scheduleExpire, attest records the real payer) |
 | Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **24 passing** (30.09.2026: units, memo, state machine, webhooks, entity→EVM, SaucerSwap path/quote, HCS reconstruct, HTS decimals not defaulted to 2) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ 18.09.2026: scaffolds, outro renders, `.env.example` includes `SAUCERSWAP_ROUTER` |
-| Fresh clone `yarn verify` | public clone | ✅ **23.09.2026** SHA `53cb29a`: **16** hardhat + **23** ledger. **Not re-run after 30.09** (`d4abd48`, ledger now **24**). Reconstruct of `INV-MU1G1FSW443` → `invoice.paid` still holds. |
+| Fresh clone `yarn verify` | public clone `821fae1` | ✅ **30.09.2026**: install **86s**, `yarn verify` **exit 0** — **16** hardhat + **24** ledger |
 | App build | `yarn next:build` | ✅ 30.09.2026: Next.js 15, routes include `/api/quote`, `/api/receipts`, `/api/agent/manifest`, `/receipt`, `/receipt/[invoiceId]` |
 | Harness artifacts | `harness/` (spec, static + yarn validators, Playwright smoke, **10-assertion** acceptance contract C1–C10) | ✅ 23.09.2026: seed repo `adamfreeman2024-eng/hedera-merchant-payments`; required `LICENSE` (not `LICENCE`); C9 `/api/quote`, C10 `/receipt` reconstruct; smoke hits `/receipt` + `/api/health` |
 | App read path with **no configuration at all** | `next start` with every env var unset | ✅ dashboard renders with setup guidance, `/new` 200, `/api/health` lists what is missing, `POST /api/invoices` → clean 503 (no crash) |

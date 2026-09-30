@@ -125,7 +125,7 @@ public Mirror Node — no `.env`, no database, no operator key:
 
 ```bash
 yarn reconstruct --topic 0.0.10541151 --invoice INV-MU1G1FSW443
-# → kind: invoice.paid, paymentTxId: 0.0.10541152-1789402480-818444585
+# → kind: invoice.paid, amountDisplay: "0.5 HBAR", paymentTxId: 0.0.10541152-1789402480-818444585
 ```
 
 Same data in the browser (this app, no HashScan login): `/receipt?topic=0.0.10541151&id=INV-MU1G1FSW443`

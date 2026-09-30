@@ -4,7 +4,7 @@
   "prd": "harness/docs/prds/merchant-payments.md",
   "version": 2,
   "description": "Browser-verifiable acceptance contract for the merchant payment gateway. The semantic validator grades the running app against these assertions — not the raw PRD.",
-  "routes": ["/", "/new", "/pay/[invoiceId]", "/receipt", "/api/invoices", "/api/invoices/[invoiceId]", "/api/quote", "/api/receipts", "/api/health"],
+  "routes": ["/", "/new", "/pay/[invoiceId]", "/receipt", "/receipt/[invoiceId]", "/api/invoices", "/api/invoices/[invoiceId]", "/api/quote", "/api/receipts", "/api/health", "/api/agent/manifest"],
   "evaluationRules": {
     "posture": "adversarial",
     "failOnUncertainty": "If an assertion cannot be positively verified from the running app, mark it FAILED. Absence of evidence is a failure.",

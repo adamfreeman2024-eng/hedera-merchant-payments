@@ -35,10 +35,14 @@ const fetchJson = async (url: string) => {
 reconstructTopic(mirror, topic, fetchJson)
   .then((report) => {
     const rows = invoice ? (report.latest[invoice] ? [report.latest[invoice]] : []) : Object.values(report.latest);
-    const display = rows.map((r) => ({
-      ...r,
-      amountDisplay: formatTokenAmount(r.amount, r.token),
-    }));
+    const display = rows.map((r) => {
+      const { amount, ...rest } = r;
+      return {
+        ...rest,
+        amountDisplay: `${formatTokenAmount(amount, r.token)} ${r.token === "HBAR" ? "HBAR" : r.token}`,
+        amountBaseUnits: amount,
+      };
+    });
     console.log(
       JSON.stringify(
         {
@@ -50,8 +54,8 @@ reconstructTopic(mirror, topic, fetchJson)
           latest: invoice ? display[0] ?? null : Object.fromEntries(display.map((r) => [r.invoiceId, r])),
         },
         null,
-        2
-      )
+        2,
+      ),
     );
     if (invoice && !report.latest[invoice]) process.exit(1);
   })

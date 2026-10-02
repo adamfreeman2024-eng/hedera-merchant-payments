@@ -27,7 +27,7 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
       ```bash
       npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
       ```
-      Fresh `git clone` of the public repo + `yarn verify` was last fully re-run **23.09.2026** (16 hardhat + 23 ledger). HEAD is now `d4abd48` (24 ledger tests, exact-out registry `0.0.10789245`).
+      Fresh `git clone` + `yarn verify` re-run **30.09.2026** on `821fae1`: install 86s, exit 0, **16** hardhat + **24** ledger. HEAD is `b1431e5` (docs follow-up). Registry `0.0.10789245`.
 
 ## Gate items and their evidence
 

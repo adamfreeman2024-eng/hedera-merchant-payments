@@ -257,5 +257,5 @@ Licence: MIT.
 - [ ] `.github/workflows/ci.yaml` is committed. It is ignored right now because the
       GitHub token in use has no `workflow` scope; run `gh auth refresh -s workflow`
       and then `git add -f .github/workflows/ci.yaml && git commit -m "ci: add workflow"`.
-- [x] README status table matches the latest local runs (30.09.2026, `d4abd48`).
+- [x] README status table matches the latest local runs (30.09.2026, `b1431e5`).
 - [x] No secrets in the tree besides Hardhat account #0 (named `HARDHAT_DEV_KEY`).

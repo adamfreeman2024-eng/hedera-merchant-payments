@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.18.3"
+
+      # The repo ships its own Yarn launcher, so CI runs the exact same package
+      # manager version a contributor gets locally — no Corepack surprises.
+      - name: Install
+        run: node .yarn/releases/yarn-3.2.3.cjs install --immutable
+
+      - name: Typecheck (ledger, contracts, worker, app)
+        run: node .yarn/releases/yarn-3.2.3.cjs typecheck
+
+      - name: Ledger unit tests (units, memo, state machine, webhooks, quote, reconstruct)
+        run: node .yarn/releases/yarn-3.2.3.cjs ledger:test
+
+      - name: Compile + test contracts
+        run: node .yarn/releases/yarn-3.2.3.cjs hardhat:test
+
+      - name: Production build (dashboard + hosted checkout)
+        run: node .yarn/releases/yarn-3.2.3.cjs next:build

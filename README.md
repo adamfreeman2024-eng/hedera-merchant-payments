@@ -254,8 +254,6 @@ Licence: MIT.
 ## Submission checklist
 
 - [x] Repo is public (21.09.2026): https://github.com/adamfreeman2024-eng/hedera-merchant-payments
-- [ ] `.github/workflows/ci.yaml` is committed. It is ignored right now because the
-      GitHub token in use has no `workflow` scope; run `gh auth refresh -s workflow`
-      and then `git add -f .github/workflows/ci.yaml && git commit -m "ci: add workflow"`.
+- [x] `.github/workflows/ci.yaml` is on GitHub (`workflow` scope PAT, 05.10.2026).
 - [x] README status table matches the latest local runs (30.09.2026 verify on `821fae1`; docs on `main`).
 - [x] No secrets in the tree besides Hardhat account #0 (named `HARDHAT_DEV_KEY`).

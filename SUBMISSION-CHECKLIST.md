@@ -7,15 +7,7 @@ Source of truth for the gate: <https://hedera.com/blog/scaffold-hbar-template-bo
 
 ## Things only the owner can do — do not lose these
 
-- [ ] **`gh auth refresh -s workflow`** — the current token's scopes are
-      `gist, read:org, repo`, with **no `workflow`**, so GitHub rejects a push that
-      contains `.github/workflows/`. Interactive device flow; the repo operator must
-      approve it. After that:
-      ```bash
-      git add -f .github/workflows/ci.yaml
-      git commit -m "ci: add workflow"
-      git push
-      ```
+- [x] **`gh auth` with `workflow` scope** — CI yaml on `main` (05.10.2026).
 - [x] **Flip the repository to public** (done 21.09.2026).
       ```bash
       gh repo edit adamfreeman2024-eng/hedera-merchant-payments --visibility public

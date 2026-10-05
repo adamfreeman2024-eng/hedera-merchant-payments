@@ -25,7 +25,7 @@ account is required for the operator).
 ## 1. Scaffold and install
 
 ```bash
-npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
+npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments -s hardhat -f nextjs-app --yes
 cd merchant-payments
 yarn install        # or: npm install      (~2 min)
 yarn verify         # typecheck + contract tests + ledger tests — green out of the box
@@ -136,7 +136,7 @@ yarn reconciler:dev       # polls the Mirror Node every 5s
    - Mirror Node: `curl "https://testnet.mirrornode.hedera.com/api/v1/accounts/<merchant>/transactions?limit=5"`
    - Registry: `getInvoice(<chainId>)` on HashScan
    - HCS topic messages
-   - `yarn reconciler:once --reconcile` prints what it matched
+   - `yarn reconciler:once` prints what it matched
 
 ## 9. Troubleshooting
 

@@ -23,7 +23,6 @@
     "hardhat:deploy": "yarn workspace @hmp/hardhat deploy",
     "hardhat:verify:testnet": "yarn workspace @hmp/hardhat verify:testnet",
     "hardhat:verify:mainnet": "yarn workspace @hmp/hardhat verify:mainnet",
-    "hardhat:chain": "yarn workspace @hmp/hardhat chain",
     "hardhat:account": "yarn workspace @hmp/hardhat account",
     "hardhat:account:generate": "yarn workspace @hmp/hardhat account:generate",
     "ledger:test": "yarn workspace @hmp/ledger test",

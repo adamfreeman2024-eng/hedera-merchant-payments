@@ -71,6 +71,22 @@
       {
         "key": "WEBHOOK_SIGNING_SECRET",
         "description": "HMAC-SHA256 secret used to sign outbound webhooks"
+      },
+      {
+        "key": "MERCHANT_WEBHOOK_URL",
+        "description": "Merchant HTTPS endpoint that receives invoice.paid / invoice.expired"
+      },
+      {
+        "key": "RECONCILE_POLL_MS",
+        "description": "Worker poll interval in milliseconds (default 5000)"
+      },
+      {
+        "key": "RECONCILE_LOOKBACK_SECONDS",
+        "description": "How far back the worker looks on Mirror Node (default 3600)"
+      },
+      {
+        "key": "HEDERA_RPC_URL",
+        "description": "Optional JSON-RPC override (default https://testnet.hashio.io/api)"
       }
     ],
     "instructions": [

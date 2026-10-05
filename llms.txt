@@ -2,7 +2,7 @@
 
 Non-custodial merchant invoices on Hedera. Customer funds move payer → merchant in the same transaction. The registry never holds a balance.
 
-Scaffold: `npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments`
+Scaffold: `npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments -s hardhat -f nextjs-app --yes`
 
 ## Read paths (no keys)
 

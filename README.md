@@ -5,7 +5,7 @@ the customer pays it on-chain, and the gateway verifies, receipts and reports th
 payment. No middleman ever holds the money.
 
 ```bash
-npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
+npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments -s hardhat -f nextjs-app --yes
 ```
 
 ---
@@ -89,7 +89,7 @@ Everything money-related lives in `packages/ledger` as pure, unit-tested functio
 
 ```bash
 # 1. scaffold
-npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments
+npx create-scaffold-hbar@latest merchant-payments --template adamfreeman2024-eng/hedera-merchant-payments -s hardhat -f nextjs-app --yes
 cd merchant-payments
 
 # 2. env + ledger
@@ -184,7 +184,7 @@ Verified locally (commands and results, not claims):
 
 | Milestone | Command | Result |
 |---|---|---|
-| Contract compiles | `yarn hardhat:compile` | ✅ 3 files, solc 0.8.28, evm target `paris` |
+| Contract compiles | `yarn hardhat:compile` | ✅ solc 0.8.28, evm target `paris` (project contracts + OpenZeppelin) |
 | Contract behaviour | `yarn hardhat:test` | ✅ **16 passing** (lifecycle, HTS/SaucerSwap, HIP-1215 scheduleExpire, attest records the real payer) |
 | Ledger domain rules | `yarn workspace @hmp/ledger test` | ✅ **24 passing** (30.09.2026: units, memo, state machine, webhooks, entity→EVM, SaucerSwap path/quote, HCS reconstruct, HTS decimals not defaulted to 2) |
 | Template contract | `create-scaffold-hbar` with `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` | ✅ 18.09.2026: scaffolds, outro renders, `.env.example` includes `SAUCERSWAP_ROUTER` |
@@ -257,5 +257,5 @@ Licence: MIT.
 - [ ] `.github/workflows/ci.yaml` is committed. It is ignored right now because the
       GitHub token in use has no `workflow` scope; run `gh auth refresh -s workflow`
       and then `git add -f .github/workflows/ci.yaml && git commit -m "ci: add workflow"`.
-- [x] README status table matches the latest local runs (30.09.2026, `b1431e5`).
+- [x] README status table matches the latest local runs (30.09.2026 verify on `821fae1`; docs on `main`).
 - [x] No secrets in the tree besides Hardhat account #0 (named `HARDHAT_DEV_KEY`).

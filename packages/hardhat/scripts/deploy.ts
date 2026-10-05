@@ -48,11 +48,15 @@ async function main() {
   console.log(`  owner (merchant) : ${owner}`);
   console.log(`  operator (gateway): ${operator}`);
   console.log(`  tx: ${deployment.deployTxHash}`);
-  const router = process.env.SAUCERSWAP_ROUTER_EVM;
-  if (router) {
+  const router = process.env.SAUCERSWAP_ROUTER_EVM || process.env.SAUCERSWAP_ROUTER;
+  if (router && router.startsWith("0x")) {
     const tx = await registry.setSaucerRouter(ethers.getAddress(router));
     await tx.wait();
     console.log(`  saucerRouter: ${router}`);
+  } else if (router) {
+    console.log(
+      `  saucerRouter skipped: ${router} is not an EVM 0x address. Set SAUCERSWAP_ROUTER_EVM.`,
+    );
   }
   console.log(`\nAdd to .env:\n  INVOICE_REGISTRY_ADDRESS=${address}\n`);
 }
